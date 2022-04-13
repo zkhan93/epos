@@ -179,6 +179,8 @@
         },
         methods: {
           fetch_items() {
+            this.error = ""
+            this.traceback = ""
             this.loading = true
             axios
               .get("/get-sales-details", {
