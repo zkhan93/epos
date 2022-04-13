@@ -181,7 +181,7 @@
           fetch_items() {
             this.loading = true
             axios
-              .get("http://localhost:5000/get-sales-details", {
+              .get("/get-sales-details", {
                 params: {
                   dist_code: this.dist_code,
                   fpsid: this.fpsid,
