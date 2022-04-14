@@ -1,4 +1,3 @@
-from functools import lru_cache
 from urllib.error import HTTPError
 import requests
 import logging
@@ -48,7 +47,7 @@ class SalesDetailsParser:
 
         trs.pop(0)
         ths = trs.pop(0).find_all("th")
-        ths = ths[:8] + trs.pop(0).find_all("th") + ths[9:]
+        ths = ths[:6] + trs.pop(0).find_all("th") + ths[7:]
         return [th.get_text().strip() for th in ths]
 
 
