@@ -69,24 +69,32 @@ class RCDetailParser:
         root_bs = BeautifulSoup(content, features="html.parser")
         tables = root_bs.find_all("table")
         members = self._parse_members(tables[0])
-        transactons = self._parse_transactions(tables[3])
+        transactons = self._parse_transactions(tables[-1])
         return members, transactons
 
     def _parse_members(self, table):
-        trs = table.find_all("tr")
-        trs = trs[2:]
-        headers = [th.get_text().strip() for th in trs.pop(0).find_all("th")]
-        rows = [[td.get_text().strip() for td in tr.find_all("td")] for tr in trs]
-        return [dict(zip(headers, row)) for row in rows]
+        try:
+            trs = table.find_all("tr")
+            trs = trs[2:]
+            headers = [th.get_text().strip() for th in trs.pop(0).find_all("th")]
+            rows = [[td.get_text().strip() for td in tr.find_all("td")] for tr in trs]
+        except Exception:
+            return []
+        else:
+            return [dict(zip(headers, row)) for row in rows]
 
     def _parse_transactions(self, table):
-        trs = table.find_all("tr")
-        trs = trs[1:]
-        tds = trs.pop(0).find_all("td")
-        tds = tds[:-1] + trs.pop(0).find_all("td")
-        headers = [td.get_text().strip() for td in tds]
-        rows = [[td.get_text().strip() for td in tr.find_all("td")] for tr in trs]
-        return [dict(zip(headers, row)) for row in rows]
+        try:
+            trs = table.find_all("tr")
+            trs = trs[1:]
+            tds = trs.pop(0).find_all("td")
+            tds = tds[:-1] + trs.pop(0).find_all("td")
+            headers = [td.get_text().strip() for td in tds]
+            rows = [[td.get_text().strip() for td in tr.find_all("td")] for tr in trs]
+        except Exception:
+            return []
+        else:
+            return [dict(zip(headers, row)) for row in rows]
 
 
 def get_sales_details(fpsid=123300100909, month=3, year=2022, dist_code=233):
