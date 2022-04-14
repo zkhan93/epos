@@ -68,7 +68,10 @@ class RCDetailParser:
     def parse(self, content):
         root_bs = BeautifulSoup(content, features="html.parser")
         tables = root_bs.find_all("table")
+        # there might me 3 or 4 tables
+        # first table is members table
         members = self._parse_members(tables[0])
+        # last table is transactions table
         transactons = self._parse_transactions(tables[-1])
         return members, transactons
 
