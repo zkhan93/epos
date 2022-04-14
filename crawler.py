@@ -1,4 +1,3 @@
-from functools import lru_cache
 from urllib.error import HTTPError
 import requests
 import logging
@@ -90,14 +89,12 @@ class RCDetailParser:
         return [dict(zip(headers, row)) for row in rows]
 
 
-@lru_cache
 def get_sales_details(fpsid=123300100909, month=3, year=2022, dist_code=233):
     table = fetch_sale_details(fpsid=fpsid, month=month, year=year, dist_code=dist_code)
     _, items = SalesDetailsParser().parse(table)
     return items
 
 
-@lru_cache
 def get_rc_details(rc_number=10310060087015900034, month=3, year=2022):
     content = fetch_rc_details(rc_number=rc_number, month=month, year=year)
     members, transactions = RCDetailParser().parse(content)
