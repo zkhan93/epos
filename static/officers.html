@@ -41,7 +41,10 @@
           >
         </select>
       </div>
-      <div class="list-group">
+      <div v-if="loading">
+        Loading...
+      </div>
+      <div class="list-group" v-if="filtered_officers.length">
         <div
           class="list-group-item"
           v-for="officer in filtered_officers"
