@@ -1,22 +1,5 @@
-from functools import lru_cache
-from urllib.error import HTTPError
-import requests
-import logging
 from bs4 import BeautifulSoup
-
-
-def do_request(url, payload):
-
-    logging.info("hitting service brace!!!")
-    try:
-        res = requests.post(
-            url,
-            data=payload,
-        )
-    except HTTPError as ex:
-        logging.exception(f"failed to get data from server {url} {payload}")
-    else:
-        return res.text
+from .core import do_request
 
 
 def fetch_sale_details(fpsid, month, year, dist_code):
@@ -26,7 +9,7 @@ def fetch_sale_details(fpsid, month, year, dist_code):
         "month": month,
         "year": year,
     }
-    return do_request("http://epos.bihar.gov.in/FPS_Trans_Details.jsp", payload)
+    return do_request("http://epos.bihar.gov.in/FPS_Trans_Details.jsp", payload).text
 
 
 def fetch_rc_details(rc_number, month, year):
@@ -35,7 +18,7 @@ def fetch_rc_details(rc_number, month, year):
         "month": month,
         "year": year,
     }
-    return do_request("http://epos.bihar.gov.in/SRC_Trans_Details.jsp", payload)
+    return do_request("http://epos.bihar.gov.in/SRC_Trans_Details.jsp", payload).text
 
 
 class SalesDetailsParser:

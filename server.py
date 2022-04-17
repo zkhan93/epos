@@ -1,7 +1,8 @@
 import traceback
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
-import crawler
+import crawler.epos as epos
+import crawler.kaimur_officer as kaimur_officer
 import logging
 import sys
 
@@ -29,8 +30,9 @@ def error_response():
 
 
 @app.route("/")
-def index():
-    return app.send_static_file("index.html")
+@app.route("/<file>")
+def index(file="index"):
+    return app.send_static_file(f"{file}.html")
 
 
 @app.route("/get-sales-details")
@@ -43,7 +45,7 @@ def get_sales_details():
     year = request.args["year"]
     dist_code = request.args["dist_code"]
     try:
-        items = crawler.get_sales_details(
+        items = epos.get_sales_details(
             fpsid=fpsid, month=month, year=year, dist_code=dist_code
         )
         return jsonify(items)
@@ -61,10 +63,16 @@ def get_rc_details():
     month = request.args["month"]
     year = request.args["year"]
     try:
-        members, transactions = crawler.get_rc_details(
+        members, transactions = epos.get_rc_details(
             rc_number=rc_number, month=month, year=year
         )
         return jsonify(dict(members=members, transactions=transactions))
     except Exception:
         logging.exception("failed to get data")
         return error_response()
+
+
+@app.route("/get-kaimur-officers")
+def get_kaimur_officers():
+    officers = kaimur_officer.get_officers()
+    return jsonify(officers)
