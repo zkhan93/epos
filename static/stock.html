@@ -77,12 +77,20 @@
         </div>
       </div>
       <div v-if="items.length">
-        <h3>Summary</h3>
-        <div class="list-group mb-2">
-          <div class="list-group-item" v-for="(summary, key) in summaries">
-            {{summary.name }}: {{summary.recieved}} / {{summary.allotted}}
-          </div>
-        </div>
+        <table class="table mb-2">
+          <tr>
+            <th></th>
+            <th>Alloted</th>
+            <th>Received</th>
+            <th>Issued</th>
+          </tr>
+          <tr class="" v-for="summary in summaries">
+            <th style="text-transform: capitalize;">{{summary.name}}</th>
+            <td>{{summary.allotted}}</td>
+            <td>{{summary.recieved}}</td>
+            <td>{{summary.issued}}</td>
+          </tr>
+        </table>
       </div>
       <div v-if="items.length">
         <h3>Details</h3>
@@ -157,16 +165,19 @@
               );
               var allotted = 0;
               var recieved = 0;
+              var issued = 0;
               filtered.forEach((item) => {
-                recieved += parseInt(item["Regular Received Qty(Kgs)"]);
-                recieved += parseInt(item["Extra Received Qty(Kgs)"]);
-                allotted += parseInt(item["Alloted Qty(Kgs)"]);
+                recieved += parseFloat(item["Regular Received Qty(Kgs)"]);
+                recieved += parseFloat(item["Extra Received Qty(Kgs)"]);
+                allotted += parseFloat(item["Alloted Qty(Kgs)"]);
+                issued += parseFloat(item["Issued Qty(Kgs)"]);
               });
               groups.push({
                 id: commodity,
                 name: commodity,
                 allotted: allotted,
                 recieved: recieved,
+                issued: issued,
               });
             });
             return groups;
