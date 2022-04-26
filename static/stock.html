@@ -87,7 +87,7 @@
           <tr class="" v-for="summary in summaries">
             <th style="text-transform: capitalize;">{{summary.name}}</th>
             <td>{{summary.allotted}}</td>
-            <td>{{summary.recieved}}</td>
+            <td>{{summary.received}}</td>
             <td>{{summary.issued}}</td>
           </tr>
         </table>
@@ -164,11 +164,11 @@
                 item["Commodity"].toLowerCase().includes(commodity)
               );
               var allotted = 0;
-              var recieved = 0;
+              var received = 0;
               var issued = 0;
               filtered.forEach((item) => {
-                recieved += parseFloat(item["Regular Received Qty(Kgs)"]);
-                recieved += parseFloat(item["Extra Received Qty(Kgs)"]);
+                received += parseFloat(item["Regular Received Qty(Kgs)"]);
+                received += parseFloat(item["Extra Received Qty(Kgs)"]);
                 allotted += parseFloat(item["Alloted Qty(Kgs)"]);
                 issued += parseFloat(item["Issued Qty(Kgs)"]);
               });
@@ -176,7 +176,7 @@
                 id: commodity,
                 name: commodity,
                 allotted: allotted,
-                recieved: recieved,
+                received: received,
                 issued: issued,
               });
             });

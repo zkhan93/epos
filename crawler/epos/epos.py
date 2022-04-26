@@ -50,7 +50,7 @@ def get_rc_details(rc_number=10310060087015900034, month=3, year=2022):
     return members, transactions
 
 
-@lru_cache
+# @lru_cache
 def get_stock_details(fpsid=123300100909, month=3, year=2022, dist_code=233):
     content = _fetch_stock_details(
         fpsid=fpsid, month=month, year=year, dist_code=dist_code
