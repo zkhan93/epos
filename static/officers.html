@@ -44,6 +44,18 @@
       <div v-if="loading">
         Loading...
       </div>
+      <div class="error" v-if="error">
+        <div class="alert alert-danger" role="alert">
+          <h4 class="alert-heading">Error Occurred!</h4>
+          <p>{{error}}</p>
+          <hr />
+          <ul>
+            <li class="" v-for="line in traceback">
+              {{line}}
+            </li>
+          </ul>
+        </div>
+      </div>
       <div class="list-group" v-if="filtered_officers.length">
         <div
           class="list-group-item"
@@ -77,6 +89,8 @@
               { id: "landline_number", name: "Landline No" },
               { id: "fax_number", name: "Fax No" },
             ],
+            error: "",
+            traceback: [],
             loading: false,
           };
         },
@@ -101,15 +115,34 @@
         methods: {
           fetch_officers() {
             this.loading = true;
+            this.error = "";
+            this.traceback = [];
             axios
               .get("/get-kaimur-officers")
               .then((res) => {
                 this.loading = false;
                 this.officers = res.data;
               })
-              .catch(() => {
+              .catch((error) => {
+                var parsed_error = this.parse_error(error);
+                this.error = parsed_error.error;
+                this.traceback = parsed_error.traceback;
                 this.loading = false;
               });
+          },
+          parse_error(error) {
+            var msg = error;
+            var traceback = [];
+            if (error && error.response) {
+              msg = error.response;
+              if (error.response.data) {
+                msg = error.response.data;
+                if (error.response.data.error) msg = error.response.data.error;
+                if (error.response.data.traceback)
+                  traceback = error.response.data.traceback;
+              }
+            }
+            return { error: msg, traceback: traceback };
           },
         },
       }).mount("#app");

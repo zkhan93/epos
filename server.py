@@ -72,6 +72,25 @@ def get_rc_details():
         return error_response()
 
 
+@app.route("/get-stock-details")
+def get_stock_details():
+    logging.info("api request")
+    # for shahina parveen
+    # fpsid=123300100909, month=3, year=2022, dist_code=233
+    fpsid = request.args["fpsid"]
+    month = request.args["month"]
+    year = request.args["year"]
+    dist_code = request.args["dist_code"]
+    try:
+        items = epos.get_stock_details(
+            fpsid=fpsid, month=month, year=year, dist_code=dist_code
+        )
+        return jsonify(items)
+    except Exception:
+        logging.exception("failed to get data")
+        return error_response()
+
+
 @app.route("/get-kaimur-officers")
 def get_kaimur_officers():
     officers = kaimur_officer.get_officers()

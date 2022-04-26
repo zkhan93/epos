@@ -1,27 +1,14 @@
 from bs4 import BeautifulSoup
-from .core import do_request
+import abc
 
 
-def fetch_sale_details(fpsid, month, year, dist_code):
-    payload = {
-        "dist_code": dist_code,
-        "fps_id": fpsid,
-        "month": month,
-        "year": year,
-    }
-    return do_request("http://epos.bihar.gov.in/FPS_Trans_Details.jsp", payload).text
+class BaseParser:
+    @abc.abstractmethod
+    def parse(self, content):
+        pass
 
 
-def fetch_rc_details(rc_number, month, year):
-    payload = {
-        "src_no": rc_number,
-        "month": month,
-        "year": year,
-    }
-    return do_request("http://epos.bihar.gov.in/SRC_Trans_Details.jsp", payload).text
-
-
-class SalesDetailsParser:
+class SalesDetailsParser(BaseParser):
     def parse(self, content):
         root_bs = BeautifulSoup(content, features="html.parser")
         headers = self._parse_headers(root_bs)
@@ -48,7 +35,7 @@ class SalesDetailsParser:
         return [th.get_text().strip() for th in ths]
 
 
-class RCDetailParser:
+class RCDetailParser(BaseParser):
     def parse(self, content):
         root_bs = BeautifulSoup(content, features="html.parser")
         tables = root_bs.find_all("table")
@@ -84,15 +71,34 @@ class RCDetailParser:
             return [dict(zip(headers, row)) for row in rows]
 
 
-# @lru_cache
-def get_sales_details(fpsid=123300100909, month=3, year=2022, dist_code=233):
-    table = fetch_sale_details(fpsid=fpsid, month=month, year=year, dist_code=dist_code)
-    _, items = SalesDetailsParser().parse(table)
-    return items
+class StockDetailParser(BaseParser):
+    def parse(self, content):
+        root_bs = BeautifulSoup(content, features="html.parser")
+        table = root_bs.find("table", attrs={"id": "stock_details"})
+        if table is None:
+            return []
+        headers = self._parse_header(table)
+        rows = self._parse_rows(table)
+        return [dict(zip(headers, row)) for row in rows]
 
+    def _parse_rows(self, table):
+        trs = table.find_all("tr")
+        trs = trs[3:]
+        return [[td.get_text() for td in tr.find_all("td")] for tr in trs]
 
-# @lru_cache
-def get_rc_details(rc_number=10310060087015900034, month=3, year=2022):
-    content = fetch_rc_details(rc_number=rc_number, month=month, year=year)
-    members, transactions = RCDetailParser().parse(content)
-    return members, transactions
+    def _parse_header(self, table):
+        trs = table.find_all("tr")
+        trs.pop(0)
+        ths = trs.pop(0).find_all("th")
+        next_ths = trs.pop(0).find_all("th")
+        headers = []
+        for th in ths:
+            colspan = int(th.attrs.get("colspan", 0))
+            if colspan:
+                suffix = th.get_text()
+                while colspan and len(next_ths):
+                    header = next_ths.pop(0).get_text()
+                    headers.append(f"{header} {suffix}")
+            else:
+                headers.append(th.get_text())
+        return headers
