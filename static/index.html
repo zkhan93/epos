@@ -88,7 +88,7 @@
         </div>
       </div>
       <div v-if="!loading && !error">
-        <div class="row mb-2">
+        <div class="row">
           <div class="col">
             <h4>Total entries {{items.length}}</h4>
           </div>
@@ -104,6 +104,14 @@
                 >
               </select>
             </div>
+          </div>
+        </div>
+        <div class="row mb-2">
+          <div class="col">
+            PHH: <b>{{filter_items("Scheme", "PHH").length}}</b>
+          </div>
+          <div class="col">
+            AAY: <b>{{filter_items("Scheme", "AAY").length}}</b>
           </div>
         </div>
 
@@ -363,6 +371,9 @@
           this.fetch_items();
         },
         methods: {
+          filter_items(key, value) {
+            return this.items.filter((item) => item[key] === value);
+          },
           compare_date(a, b) {
             var a_date = moment(a, "DD-MM-YYYY");
             var b_date = moment(b, "DD-MM-YYYY");
