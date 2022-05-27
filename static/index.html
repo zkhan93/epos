@@ -425,6 +425,8 @@
           fetch_rc_details(item) {
             this.detail_item = item;
             this.details_loading = true;
+            this.members = [];
+            this.transactions = [];
             axios
               .get("/get-rc-details", {
                 params: {

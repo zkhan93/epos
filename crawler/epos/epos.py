@@ -34,7 +34,7 @@ def _fetch_stock_details(fpsid, month, year, dist_code):
     ).text
 
 
-# @lru_cache
+@lru_cache
 def get_sales_details(fpsid=123300100909, month=3, year=2022, dist_code=233):
     table = _fetch_sale_details(
         fpsid=fpsid, month=month, year=year, dist_code=dist_code
