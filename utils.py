@@ -2,6 +2,8 @@ import logging
 import os
 from diskcache import Cache
 
+logging.basicConfig(level=logging.INFO)
+
 WEEK_IN_SECONDS = 60 * 24 * 30
 
 

@@ -95,7 +95,7 @@ def get_rc_details(rc_number=10310060087015900034, month=3, year=2022):
     if not data:
         content = _fetch_rc_details(rc_number=rc_number, month=month, year=year)
         members, transactions = RCDetailParser().parse(content)
-        cache.set(cache_key, ({"members": members, "transactions": transactions}))
+        cache.set(cache_key, {"members": members, "transactions": transactions})
     else:
         members, transactions = data["members"], data["transactions"]
     return members, transactions
