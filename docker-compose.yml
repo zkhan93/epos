@@ -1,0 +1,12 @@
+version: "3"
+
+services:
+  epos:
+    image: ghcr.io/zkhan93/epos:latest
+    ports:
+      - 80
+    # labels:
+    #   - traefik.enable=${TRAEFIK_ENABLE:-true}
+    #   - traefik.http.routers.khancave-epos.rule=Host(`${EPOS_DOMAIN}`)
+    #   - traefik.http.routers.khancave-epos.tls.certresolver=le
+    restart: unless-stopped

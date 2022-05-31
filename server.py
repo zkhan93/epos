@@ -1,7 +1,9 @@
 import traceback
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
+from diskcache import Cache
 import crawler.epos as epos
+import crawler.epos.collection as collection
 import crawler.kaimur_officer as kaimur_officer
 import logging
 import sys
@@ -95,3 +97,24 @@ def get_stock_details():
 def get_kaimur_officers():
     officers = kaimur_officer.get_officers()
     return jsonify(officers)
+
+
+@app.route("/get-collection-summary")
+def get_collection_summary():
+    year = request.args["year"]
+    month = request.args["month"]
+    data = collection.get_summary(year=year, month=month)
+    return jsonify(data)
+
+
+@app.route("/get-epds-rc-details")
+def get_epds_rc_details():
+    rc_number = request.args["rcnumber"]
+    dist_code = request.args["dist_code"]
+    try:
+        data = epos.get_rc_details_from_epds(rc_number=rc_number, dist_code=dist_code)
+    except Exception as ex:
+        logging.exception("failed to get data")
+        return error_response()
+    else:
+        return jsonify(data)

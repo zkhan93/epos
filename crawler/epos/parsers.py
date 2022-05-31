@@ -102,3 +102,30 @@ class StockDetailParser(BaseParser):
             else:
                 headers.append(th.get_text())
         return headers
+
+
+class EPDSRCDetailParser(BaseParser):
+    def parse(self, content):
+        root_bs = BeautifulSoup(content, features="html.parser")
+        table = root_bs.find("table", {"id": "ContentPlaceHolder2_gridview_member"})
+        headers = self._parse_header(table)
+        members = self._parse_members(table)
+        extra = self._parse_extra_info(table)
+        return [dict(zip(headers, member)) for member in members], extra
+
+    def _parse_members(self, table):
+        trs = table.find_all("tr")
+        # members trs start from 4th tr
+        trs = trs[3:]
+        return [[td.get_text().strip() for td in tr.find_all("td")] for tr in trs]
+
+    def _parse_header(self, table):
+        trs = table.find_all("tr")
+        header_tr = trs[2]
+        ths = header_tr.find_all("th")
+        return [th.get_text().strip() for th in ths]
+
+    def _parse_extra_info(self, table):
+        trs = table.find_all("tr")
+        info_tr = trs[1]
+        return {th.get_text().strip().split(":") for th in info_tr.find_all("th")}

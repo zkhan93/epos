@@ -1,3 +1,4 @@
 *.py[c0]
 .vscode
 venv/
+docker-compose.override.yml
