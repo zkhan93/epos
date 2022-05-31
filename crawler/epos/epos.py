@@ -1,3 +1,4 @@
+import logging
 from flask import jsonify
 
 from ..core import do_request
@@ -8,6 +9,8 @@ from .parsers import (
     StockDetailParser,
 )
 import utils
+
+logging.basicConfig(level=logging.INFO)
 
 
 def _fetch_sale_details(fpsid, month, year, dist_code):
@@ -92,6 +95,7 @@ def get_rc_details(rc_number=10310060087015900034, month=3, year=2022):
     cache = utils.get_cache()
     cache_key = f"rc_details:{rc_number}:{month}:{year}"
     data = cache.get(cache_key)
+    logging.info(data)
     if not data:
         content = _fetch_rc_details(rc_number=rc_number, month=month, year=year)
         members, transactions = RCDetailParser().parse(content)

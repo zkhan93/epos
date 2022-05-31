@@ -46,10 +46,12 @@ def _get_summary(date, sales, month, year):
         rc_number = sale["RC No"]
         logging.info(f"for: {rc_number}")
         cache_key = f"rc_details:{rc_number}:{month}:{year}"
-        members = cache.get(cache_key)
-        if not members:
+        data = cache.get(cache_key)
+        if not data:
             members, _ = get_rc_details(rc_number=rc_number, month=month, year=year)
-            cache.set(cache_key, members)
+            cache.set(cache_key, {"members": members, "transactions": _})
+        else:
+            members = data["members"]
         is_seeded = lambda mem: mem["UID Status"].strip().lower() == "seeded"
         units = sum(is_seeded(member) for member in members)
         total_units += units
