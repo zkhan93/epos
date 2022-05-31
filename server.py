@@ -1,12 +1,13 @@
 import traceback
-from flask import Flask, jsonify, request, send_from_directory
+from flask import Flask, jsonify, request
 from flask_cors import CORS
-from diskcache import Cache
 import crawler.epos as epos
 import crawler.epos.collection as collection
 import crawler.kaimur_officer as kaimur_officer
 import logging
 import sys
+from utils import init_celery
+from worker import celery
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
@@ -16,6 +17,7 @@ logging.info("Log initialized !!")
 
 app = Flask("app")
 CORS(app)
+init_celery(celery, app)
 
 
 def error_response():
@@ -37,6 +39,17 @@ def index(file="index"):
     return app.send_static_file(f"{file}.html")
 
 
+@app.route("/tasks/<task_id>", methods=["GET"])
+def get_status(task_id):
+    task_result = celery.AsyncResult(task_id)
+    result = {
+        "id": task_id,
+        "status": task_result.status,
+        "result": task_result.result,
+    }
+    return jsonify(result)
+
+
 @app.route("/get-sales-details")
 def get_sales_details():
     logging.info("api request")
@@ -47,10 +60,10 @@ def get_sales_details():
     year = request.args["year"]
     dist_code = request.args["dist_code"]
     try:
-        items = epos.get_sales_details(
+        task = epos.get_sales_details.delay(
             fpsid=fpsid, month=month, year=year, dist_code=dist_code
         )
-        return jsonify(items)
+        return jsonify({"task_id": task.id})
     except Exception:
         logging.exception("failed to get data")
         return error_response()
@@ -65,10 +78,8 @@ def get_rc_details():
     month = request.args["month"]
     year = request.args["year"]
     try:
-        members, transactions = epos.get_rc_details(
-            rc_number=rc_number, month=month, year=year
-        )
-        return jsonify(dict(members=members, transactions=transactions))
+        task = epos.get_rc_details.delay(rc_number=rc_number, month=month, year=year)
+        return jsonify(dict(task_id=task.id))
     except Exception:
         logging.exception("failed to get data")
         return error_response()
@@ -103,8 +114,8 @@ def get_kaimur_officers():
 def get_collection_summary():
     year = request.args["year"]
     month = request.args["month"]
-    data = collection.get_summary(year=year, month=month)
-    return jsonify(data)
+    task = collection.get_summary.delay(year=year, month=month)
+    return jsonify(dict(task_id=task.id))
 
 
 @app.route("/get-epds-rc-details")
@@ -112,9 +123,11 @@ def get_epds_rc_details():
     rc_number = request.args["rcnumber"]
     dist_code = request.args["dist_code"]
     try:
-        data = epos.get_rc_details_from_epds(rc_number=rc_number, dist_code=dist_code)
+        task = epos.get_rc_details_from_epds.delay(
+            rc_number=rc_number, dist_code=dist_code
+        )
     except Exception as ex:
         logging.exception("failed to get data")
         return error_response()
     else:
-        return jsonify(data)
+        return jsonify(dict(task_id=task.id))

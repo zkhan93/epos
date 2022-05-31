@@ -1,5 +1,4 @@
 import logging
-from flask import jsonify
 
 from ..core import do_request
 from .parsers import (
@@ -11,6 +10,8 @@ from .parsers import (
 import utils
 
 logging.basicConfig(level=logging.INFO)
+
+from worker import celery
 
 
 def _fetch_sale_details(fpsid, month, year, dist_code):
@@ -63,6 +64,7 @@ def _fetch_rc_detailsepds(rc_number="10310060087015900096", dist_code="233"):
     ).text
 
 
+@celery.task(name="get_sales_details")
 def get_sales_details(fpsid=123300100909, month=3, year=2022, dist_code=233):
     table = _fetch_sale_details(
         fpsid=fpsid, month=month, year=year, dist_code=dist_code
@@ -71,6 +73,7 @@ def get_sales_details(fpsid=123300100909, month=3, year=2022, dist_code=233):
     return items
 
 
+@celery.task(name="get_rc_details_from_epds")
 def get_rc_details_from_epds(rc_number=10310060087015900034, dist_code=233):
     cache = utils.get_cache()
     cache_key = f"rc_details_epds:{rc_number}:{dist_code}"
@@ -88,9 +91,10 @@ def get_rc_details_from_epds(rc_number=10310060087015900034, dist_code=233):
         res = {"members": members}
         if extra:
             res.update(extra)
-    return jsonify(res)
+    return res
 
 
+@celery.task(name="get_rc_details")
 def get_rc_details(rc_number=10310060087015900034, month=3, year=2022):
     cache = utils.get_cache()
     cache_key = f"rc_details:{rc_number}:{month}:{year}"
@@ -102,9 +106,10 @@ def get_rc_details(rc_number=10310060087015900034, month=3, year=2022):
         cache.set(cache_key, {"members": members, "transactions": transactions})
     else:
         members, transactions = data["members"], data["transactions"]
-    return members, transactions
+    return {"members": members, "transactions": transactions}
 
 
+@celery.task(name="get_stock_details")
 def get_stock_details(fpsid=123300100909, month=3, year=2022, dist_code=233):
     content = _fetch_stock_details(
         fpsid=fpsid, month=month, year=year, dist_code=dist_code

@@ -163,6 +163,24 @@
           this.fetch_summaries();
         },
         methods: {
+          await_task(task_id, success, error) {
+            axios.get(`/tasks/${task_id}`).then((res) => {
+              if (res.data.status === "SUCCESS") {
+                success(res.data);
+              } else if (
+                res.data.status === "FAILURE" ||
+                res.data.status === "REVOKED"
+              ) {
+                error(res.data);
+              } else {
+                // call this method again in 3 sec
+                setTimeout(() => {
+                  this.await_task(task_id, success, error);
+                }, 3000);
+              }
+              // else it being processing in one way or the other
+            });
+          },
           fetch_summaries() {
             this.loading = true;
             this.error = "";
@@ -175,8 +193,16 @@
                 },
               })
               .then((res) => {
-                this.loading = false;
-                this.summary_list = res.data;
+                this.await_task(
+                  res.data.task_id,
+                  (data) => {
+                    this.loading = false;
+                    this.summary_list = data.result;
+                  },
+                  (data) => {
+                    this.error = data.result;
+                  }
+                );
               })
               .catch((error) => {
                 var parsed_error = this.parse_error(error);

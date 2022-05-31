@@ -1,7 +1,7 @@
 version: "3"
 
 services:
-  epos:
+  web:
     image: ghcr.io/zkhan93/epos:latest
     ports:
       - 80
@@ -15,6 +15,20 @@ services:
     #   - traefik.http.routers.khancave-epos.rule=Host(`${EPOS_DOMAIN}`)
     #   - traefik.http.routers.khancave-epos.tls.certresolver=le
     restart: unless-stopped
+
+  worker:
+    image: ghcr.io/zkhan93/epos:latest
+    volumes:
+      - .:/usr/src/app
+    environment:
+      - FLASK_DEBUG=1
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    depends_on:
+      - web
+      - redis
+  redis:
+    image: redis:7-alpine
 
 volumes:
   epos-cache:

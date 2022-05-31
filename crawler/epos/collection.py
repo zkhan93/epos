@@ -1,5 +1,6 @@
 from collections import defaultdict
 from datetime import datetime
+from worker import celery
 import utils
 import logging
 from .epos import get_sales_details, get_rc_details
@@ -48,10 +49,9 @@ def _get_summary(date, sales, month, year):
         cache_key = f"rc_details:{rc_number}:{month}:{year}"
         data = cache.get(cache_key)
         if not data:
-            members, _ = get_rc_details(rc_number=rc_number, month=month, year=year)
-            cache.set(cache_key, {"members": members, "transactions": _})
-        else:
-            members = data["members"]
+            data = get_rc_details.run(rc_number=rc_number, month=month, year=year)
+            cache.set(cache_key, data)
+        members = data["members"]
         is_seeded = lambda mem: mem["UID Status"].strip().lower() == "seeded"
         units = sum(is_seeded(member) for member in members)
         total_units += units
@@ -64,9 +64,12 @@ def _get_summary(date, sales, month, year):
     return summary
 
 
+@celery.task(name="get_summary")
 def get_summary(fpsid=123300100909, month=3, year=2022, dist_code=233):
     cache = utils.get_cache()
-    sales = get_sales_details(fpsid=fpsid, month=month, year=year, dist_code=dist_code)
+    sales = get_sales_details.run(
+        fpsid=fpsid, month=month, year=year, dist_code=dist_code
+    )
     group_by_date = defaultdict(list)
     for sale in sales:
         group_by_date[sale["Date"]].append(sale)
