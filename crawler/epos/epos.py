@@ -1,4 +1,3 @@
-from functools import lru_cache
 from flask import jsonify
 
 from ..core import do_request
