@@ -71,7 +71,7 @@ def get_sales_details(fpsid=123300100909, month=3, year=2022, dist_code=233):
 
 def get_rc_details_from_epds(rc_number=10310060087015900034, dist_code=233):
     cache = utils.get_cache()
-    cache_key = "rc_details_epds:{rc_number}:{dist_code}"
+    cache_key = f"rc_details_epds:{rc_number}:{dist_code}"
     data = cache.get(cache_key)
     if not data:
         content = _fetch_rc_detailsepds(rc_number=rc_number, dist_code=dist_code)
@@ -91,7 +91,7 @@ def get_rc_details_from_epds(rc_number=10310060087015900034, dist_code=233):
 
 def get_rc_details(rc_number=10310060087015900034, month=3, year=2022):
     cache = utils.get_cache()
-    cache_key = "rc_details:{rc_number}:{month}:{year}"
+    cache_key = f"rc_details:{rc_number}:{month}:{year}"
     data = cache.get(cache_key)
     if not data:
         content = _fetch_rc_details(rc_number=rc_number, month=month, year=year)

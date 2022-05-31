@@ -14,3 +14,6 @@ services:
     #   - traefik.http.routers.khancave-epos.rule=Host(`${EPOS_DOMAIN}`)
     #   - traefik.http.routers.khancave-epos.tls.certresolver=le
     restart: unless-stopped
+
+volumes:
+  epos-cache:
