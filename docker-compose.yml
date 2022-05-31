@@ -5,6 +5,10 @@ services:
     image: ghcr.io/zkhan93/epos:latest
     ports:
       - 80
+    environment:
+      - CACHE_DIR=/tmp/cache
+    volumes:
+      - epos-cache:/tmp/cache
     # labels:
     #   - traefik.enable=${TRAEFIK_ENABLE:-true}
     #   - traefik.http.routers.khancave-epos.rule=Host(`${EPOS_DOMAIN}`)

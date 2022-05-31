@@ -67,7 +67,7 @@ def get_summary(fpsid=123300100909, month=3, year=2022, dist_code=233):
     sales = get_sales_details(fpsid=fpsid, month=month, year=year, dist_code=dist_code)
     group_by_date = defaultdict(list)
     # TODO: remove limit on 20 sales
-    for sale in sales[:20]:
+    for sale in sales:
         group_by_date[sale["Date"]].append(sale)
 
     summary_list = []
