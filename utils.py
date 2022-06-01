@@ -1,7 +1,6 @@
 import logging
 import os
 from diskcache import Cache
-from celery import Celery
 
 logging.basicConfig(level=logging.INFO)
 

@@ -13,7 +13,7 @@
       crossorigin="anonymous"
     />
 
-    <title>Price</title>
+    <title>Daily Collection</title>
   </head>
   <body>
     <!-- Optional JavaScript; choose one of the two! -->
@@ -32,7 +32,13 @@
     <script src="https://cdn.jsdelivr.net/lodash/4.13.1/lodash.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/moment@2.29.2/moment.min.js"></script>
     <div id="app" class="container">
-      <h2 class="mt-3">Daily Collection Summary</h2>
+      <div class="text-center">
+        <h2 class="mt-3">Daily Collection Summary</h2>
+        <div>{{fpsid}}</div>
+        <button class="btn btn-primary btn-sm m-3" @click="fetch_summaries()">
+          Reload
+        </button>
+      </div>
       <div>
         <label>Select Month</label>
         <div class="input-group mb-3">
@@ -60,15 +66,11 @@
           <h4 class="alert-heading">Error Occurred!</h4>
           <p>{{error}}</p>
           <hr />
-          <ul>
-            <li class="" v-for="line in traceback">
-              {{line}}
-            </li>
-          </ul>
+          <pre><code>{{traceback}}</code></pre>
         </div>
       </div>
 
-      <div class="list-group" v-if="summary_list.length">
+      <div class="list-group" v-if="sorted_summary_list.length">
         <div class="list-group-item mt-3">
           <div class="text-center"><b>Total</b></div>
           <div class="row">
@@ -85,7 +87,7 @@
 
         <div
           class="list-group-item mt-3"
-          v-for="summary in summary_list"
+          v-for="summary in sorted_summary_list"
           :key="summary.id"
         >
           <div class="text-center"><b>{{summary.date}}</b></div>
@@ -103,22 +105,33 @@
       </div>
     </div>
     <script>
-      // POST here http://epos.bihar.gov.in/FPS_Trans_Details.jsp
-      // with
-      // dist_code=233 fps_id=123300100909 month=3 year=2022
-
       Vue.createApp({
         data() {
           return {
+            dist_code: 233,
+            fpsid: 123300100909,
             year: new Date().getFullYear(),
-            month: new Date().getMonth(),
+            month: new Date().getMonth() + 1,
             summary_list: [],
             error: "",
             traceback: [],
             loading: false,
+            current_task_id: null,
+            task_timeout: undefined,
           };
         },
         computed: {
+          sorted_summary_list() {
+            return this.summary_list.sort((a, b) => {
+              if (
+                moment(a.date, "DD-MM-YYYY").isBefore(
+                  moment(b.date, "DD-MM-YYYY")
+                )
+              )
+                return 1;
+              else return -1;
+            });
+          },
           months() {
             var names = [
               "January",
@@ -164,6 +177,7 @@
         },
         methods: {
           await_task(task_id, success, error) {
+            this.set_loading_state();
             axios.get(`/tasks/${task_id}`).then((res) => {
               if (res.data.status === "SUCCESS") {
                 success(res.data);
@@ -174,33 +188,48 @@
                 error(res.data);
               } else {
                 // call this method again in 3 sec
-                setTimeout(() => {
-                  this.await_task(task_id, success, error);
-                }, 3000);
+                if (this.latest_task_id != task_id) {
+                  this.task_timeout = setTimeout(() => {
+                    this.await_task(task_id, success, error);
+                  }, 3000);
+                }
               }
               // else it being processing in one way or the other
             });
           },
-          fetch_summaries() {
+          set_loading_state() {
             this.loading = true;
             this.error = "";
             this.traceback = [];
+            this.summary_list = [];
+          },
+          fetch_summaries() {
+            this.set_loading_state();
             axios
               .get("/get-collection-summary", {
                 params: {
+                  dist_code: this.dist_code,
+                  fpsid: this.fpsid,
                   month: this.month,
                   year: this.year,
                 },
               })
               .then((res) => {
+                this.current_task_id = res.data.task_id;
+                if (this.task_timeout != undefined)
+                  clearTimeout(this.task_timeout);
                 this.await_task(
                   res.data.task_id,
                   (data) => {
                     this.loading = false;
                     this.summary_list = data.result;
+                    this.error = "";
+                    this.traceback = "";
                   },
                   (data) => {
-                    this.error = data.result;
+                    this.loading = false;
+                    this.error = data.result.error;
+                    this.traceback = data.result.traceback;
                   }
                 );
               })

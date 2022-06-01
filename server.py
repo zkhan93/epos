@@ -42,12 +42,21 @@ def index(file="index"):
 @app.route("/tasks/<task_id>", methods=["GET"])
 def get_status(task_id):
     task_result = celery.AsyncResult(task_id)
-    result = {
-        "id": task_id,
-        "status": task_result.status,
-        "result": task_result.result,
-    }
-    return jsonify(result)
+    result = task_result.result
+
+    if task_result.failed():
+
+        result = {
+            "error": str(task_result.result),
+            "traceback": task_result.traceback,
+        }
+    return jsonify(
+        {
+            "id": task_id,
+            "status": task_result.status,
+            "result": result,
+        }
+    )
 
 
 @app.route("/get-sales-details")
@@ -95,10 +104,10 @@ def get_stock_details():
     year = request.args["year"]
     dist_code = request.args["dist_code"]
     try:
-        items = epos.get_stock_details(
+        task = epos.get_stock_details.delay(
             fpsid=fpsid, month=month, year=year, dist_code=dist_code
         )
-        return jsonify(items)
+        return jsonify(dict(task_id=task.id))
     except Exception:
         logging.exception("failed to get data")
         return error_response()
@@ -106,15 +115,19 @@ def get_stock_details():
 
 @app.route("/get-kaimur-officers")
 def get_kaimur_officers():
-    officers = kaimur_officer.get_officers()
-    return jsonify(officers)
+    task = kaimur_officer.get_officers.delay()
+    return jsonify(dict(task_id=task.id))
 
 
 @app.route("/get-collection-summary")
 def get_collection_summary():
+    fpsid = request.args["fpsid"]
+    dist_code = request.args["dist_code"]
     year = request.args["year"]
     month = request.args["month"]
-    task = collection.get_summary.delay(year=year, month=month)
+    task = collection.get_summary.delay(
+        fpsid=fpsid, dist_code=dist_code, year=year, month=month
+    )
     return jsonify(dict(task_id=task.id))
 
 

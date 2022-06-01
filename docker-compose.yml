@@ -6,10 +6,10 @@ services:
     ports:
       - 80
     environment:
-      - CACHE_DIR=/tmp/cache
+      - CACHE_DIR=/cache
       - CLEAR_CACHE=False
     volumes:
-      - epos-cache:/tmp/cache
+      - epos-cache:/cache
     # labels:
     #   - traefik.enable=${TRAEFIK_ENABLE:-true}
     #   - traefik.http.routers.khancave-epos.rule=Host(`${EPOS_DOMAIN}`)
@@ -18,12 +18,24 @@ services:
 
   worker:
     image: ghcr.io/zkhan93/epos:latest
+    entrypoint:
+      [
+        "celery",
+        "--app",
+        "server.celery",
+        "worker",
+        "--loglevel=info"
+      ]
     volumes:
       - .:/usr/src/app
+      - epos-cache:/cache
     environment:
+      - CACHE_DIR=/cache
+      - CLEAR_CACHE=False
       - FLASK_DEBUG=1
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
+
     depends_on:
       - web
       - redis

@@ -69,11 +69,7 @@
           <h4 class="alert-heading">Error Occurred!</h4>
           <p>{{error}}</p>
           <hr />
-          <ul>
-            <li class="" v-for="line in traceback">
-              {{line}}
-            </li>
-          </ul>
+          <pre><code>{{traceback}}</code></pre>
         </div>
       </div>
       <div v-if="items.length">
@@ -115,7 +111,7 @@
             key: "Sl.No",
             dist_code: 233,
             fpsid: 123300100909,
-            month: new Date().getMonth(),
+            month: new Date().getMonth() + 1,
             year: new Date().getFullYear(),
             items: [],
             headers: [
@@ -208,6 +204,24 @@
             this.error = "";
             this.traceback = [];
           },
+          await_task(task_id, success, error) {
+            axios.get(`/tasks/${task_id}`).then((res) => {
+              if (res.data.status === "SUCCESS") {
+                success(res.data);
+              } else if (
+                res.data.status === "FAILURE" ||
+                res.data.status === "REVOKED"
+              ) {
+                error(res.data);
+              } else {
+                // call this method again in 3 sec
+                setTimeout(() => {
+                  this.await_task(task_id, success, error);
+                }, 3000);
+              }
+              // else it being processing in one way or the other
+            });
+          },
           fetch_items() {
             this.clear();
             axios
@@ -220,8 +234,18 @@
                 },
               })
               .then((res) => {
-                this.loading = false;
-                this.items = res.data;
+                this.await_task(
+                  res.data.task_id,
+                  (data) => {
+                    this.loading = false;
+                    this.items = data.result;
+                  },
+                  (data) => {
+                    this.error = data.result.error;
+                    this.traceback = data.result.traceback;
+                    this.loading = false;
+                  }
+                );
               })
               .catch((error) => {
                 var parsed_error = this.parse_error(error);

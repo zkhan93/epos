@@ -49,11 +49,7 @@
           <h4 class="alert-heading">Error Occurred!</h4>
           <p>{{error}}</p>
           <hr />
-          <ul>
-            <li class="" v-for="line in traceback">
-              {{line}}
-            </li>
-          </ul>
+          <pre><code>{{traceback}}</code></pre>
         </div>
       </div>
       <div class="list-group" v-if="filtered_officers.length">
@@ -113,6 +109,24 @@
           this.fetch_officers();
         },
         methods: {
+          await_task(task_id, success, error) {
+            axios.get(`/tasks/${task_id}`).then((res) => {
+              if (res.data.status === "SUCCESS") {
+                success(res.data);
+              } else if (
+                res.data.status === "FAILURE" ||
+                res.data.status === "REVOKED"
+              ) {
+                error(res.data);
+              } else {
+                // call this method again in 3 sec
+                setTimeout(() => {
+                  this.await_task(task_id, success, error);
+                }, 3000);
+              }
+              // else it being processing in one way or the other
+            });
+          },
           fetch_officers() {
             this.loading = true;
             this.error = "";
@@ -120,8 +134,18 @@
             axios
               .get("/get-kaimur-officers")
               .then((res) => {
-                this.loading = false;
-                this.officers = res.data;
+                this.await_task(
+                  res.data.task_id,
+                  (data) => {
+                    this.loading = false;
+                    this.officers = data.result;
+                  },
+                  (data) => {
+                    this.error = data.result.error;
+                    this.traceback = data.result.traceback;
+                    this.loading = false;
+                  }
+                );
               })
               .catch((error) => {
                 var parsed_error = this.parse_error(error);

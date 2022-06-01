@@ -80,11 +80,7 @@
           <h4 class="alert-heading">Error Occurred!</h4>
           <p>{{error}}</p>
           <hr />
-          <ul>
-            <li class="" v-for="line in traceback">
-              {{line}}
-            </li>
-          </ul>
+          <pre><code>{{traceback}}</code></pre>
         </div>
       </div>
       <div v-if="!loading && !error">
@@ -216,11 +212,7 @@
                       <h4 class="alert-heading">Error Occurred!</h4>
                       <p>{{details_error}}</p>
                       <hr />
-                      <ul>
-                        <li class="" v-for="line in details_traceback">
-                          {{line}}
-                        </li>
-                      </ul>
+                      <pre><code>{{details_traceback}}</code></pre>
                     </div>
                   </div>
                 </div>
@@ -242,7 +234,7 @@
       // POST here http://epos.bihar.gov.in/FPS_Trans_Details.jsp
       // with
       // dist_code=233 fps_id=123300100909 month=3 year=2022
-
+      console.log(new Date().getMonth());
       Vue.createApp({
         data() {
           return {
@@ -253,7 +245,7 @@
             dist_code: 233,
             fpsid: 123300100909,
             year: new Date().getFullYear(),
-            month: new Date().getMonth(),
+            month: new Date().getMonth() + 1,
             search_rc_number: "",
             error: "",
             traceback: "",
@@ -367,7 +359,6 @@
           },
         },
         mounted() {
-          if (this.month == 0) this.month = 11;
           this.fetch_items();
         },
         methods: {
@@ -423,7 +414,9 @@
                     this.loading = false;
                   },
                   (data) => {
-                    this.error = data.result;
+                    this.error = data.result.error;
+                    this.traceback = data.result.traceback;
+                    this.loading = false;
                   }
                 );
               })
@@ -473,7 +466,9 @@
                     this.details_loading = false;
                   },
                   (data) => {
-                    this.error = data.result;
+                    this.error = data.result.error;
+                    this.traceback = data.result.traceback;
+                    this.details_loading = false;
                   }
                 );
               })
