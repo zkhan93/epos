@@ -17,7 +17,7 @@ logging.info("Log initialized !!")
 
 app = Flask("app")
 CORS(app)
-init_celery(celery, app)
+celery = init_celery(celery, app)
 
 
 def error_response():
