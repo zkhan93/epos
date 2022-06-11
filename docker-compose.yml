@@ -39,6 +39,24 @@ services:
     depends_on:
       - web
       - redis
+
+  flower:
+    image: ghcr.io/zkhan93/epos:latest
+    command:
+      [
+        "celery",
+        "--app",
+        "server.celery",
+        "flower",
+        "--address=0.0.0.0",
+        "--port=5555"
+      ]
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    ports:
+      - 5555:5555
+
   redis:
     image: redis:7-alpine
 

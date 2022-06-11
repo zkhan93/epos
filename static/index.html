@@ -297,6 +297,8 @@
               "Gender",
               "UID Status",
             ],
+            current_task_id: null,
+            task_timeout: undefined,
           };
         },
         computed: {
@@ -383,9 +385,11 @@
                 error(res.data);
               } else {
                 // call this method again in 3 sec
-                setTimeout(() => {
-                  this.await_task(task_id, success, error);
-                }, 3000);
+                if (this.latest_task_id != task_id) {
+                  this.task_timeout = setTimeout(() => {
+                    this.await_task(task_id, success, error);
+                  }, 1000);
+                }
               }
               // else it being processing in one way or the other
             });
@@ -404,6 +408,9 @@
                 },
               })
               .then((res) => {
+                this.current_task_id = res.data.task_id;
+                if (this.task_timeout != undefined)
+                  clearTimeout(this.task_timeout);
                 this.await_task(
                   res.data.task_id,
                   (data) => {
@@ -455,6 +462,9 @@
                 },
               })
               .then((res) => {
+                this.current_task_id = res.data.task_id;
+                if (this.task_timeout != undefined)
+                  clearTimeout(this.task_timeout);
                 this.await_task(
                   res.data.task_id,
                   (data) => {
