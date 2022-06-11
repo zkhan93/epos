@@ -21,7 +21,7 @@ def _fetch_sale_details(fpsid, month, year, dist_code):
         "month": month,
         "year": year,
     }
-    return do_request("http://epos.bihar.gov.in/FPS_Trans_Details.jsp", payload).text
+    return do_request("https://epos.bihar.gov.in/FPS_Trans_Details.jsp", payload).text
 
 
 def _fetch_rc_details(rc_number, month, year):
@@ -30,7 +30,7 @@ def _fetch_rc_details(rc_number, month, year):
         "month": month,
         "year": year,
     }
-    return do_request("http://epos.bihar.gov.in/SRC_Trans_Details.jsp", payload).text
+    return do_request("https://epos.bihar.gov.in/SRC_Trans_Details.jsp", payload).text
 
 
 def _fetch_stock_details(fpsid, month, year, dist_code):
@@ -41,7 +41,7 @@ def _fetch_stock_details(fpsid, month, year, dist_code):
         "year": year,
     }
     return do_request(
-        "http://epos.bihar.gov.in/fps_stock_register.action", payload
+        "https://epos.bihar.gov.in/fps_stock_register.action", payload
     ).text
 
 
