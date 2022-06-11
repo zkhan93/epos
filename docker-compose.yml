@@ -23,11 +23,13 @@ services:
     entrypoint:
       [
         "celery",
+        "worker",
         "--app",
         "server.celery",
-        "worker",
         "--pool",
         "eventlet",
+        "--autoscale",
+        "10,2",
         "--loglevel=info"
       ]
     volumes:
@@ -37,7 +39,7 @@ services:
       - CACHE_DIR=/cache
       - CLEAR_CACHE=False
       - CELERY_BROKER_URL=redis://redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/1
 
     depends_on:
       - web
