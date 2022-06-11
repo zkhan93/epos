@@ -26,6 +26,8 @@ services:
         "--app",
         "server.celery",
         "worker",
+        "--pool",
+        "eventlet",
         "--loglevel=info"
       ]
     volumes:

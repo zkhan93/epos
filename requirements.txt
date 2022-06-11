@@ -7,3 +7,4 @@ diskcache==5.4.0
 celery==5.2.7
 redis==4.3.1
 flower==1.0.0
+eventlet==0.33.1
