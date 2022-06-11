@@ -12,4 +12,4 @@ RUN pip install -r requirements.txt
 COPY . .
 EXPOSE 80
 
-ENTRYPOINT ['gunicorn', 'wsgi:app', '--bind', '0.0.0.0:80', '--workers', '5', '--log-level=info', '--access-logfile', "'-'"]
+ENTRYPOINT ["/app/start.sh"]

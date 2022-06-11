@@ -9,13 +9,13 @@ services:
       - CACHE_DIR=/cache
       - CLEAR_CACHE=False
       - CELERY_BROKER_URL=redis://redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/1
     volumes:
       - epos-cache:/cache
-    # labels:
-    #   - traefik.enable=${TRAEFIK_ENABLE:-true}
-    #   - traefik.http.routers.khancave-epos.rule=Host(`${EPOS_DOMAIN}`)
-    #   - traefik.http.routers.khancave-epos.tls.certresolver=le
+    labels:
+      - traefik.enable=${TRAEFIK_ENABLE:-true}
+      - traefik.http.routers.khancave-epos.rule=Host(`${EPOS_DOMAIN}`)
+      - traefik.http.routers.khancave-epos.tls.certresolver=le
     restart: unless-stopped
 
   worker:
@@ -47,7 +47,7 @@ services:
 
   flower:
     image: ghcr.io/zkhan93/epos:latest
-    command:
+    entrypoint:
       [
         "celery",
         "--app",
@@ -59,13 +59,11 @@ services:
       ]
     environment:
       - CELERY_BROKER_URL=redis://redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/1
     labels:
       - traefik.enable=${TRAEFIK_ENABLE:-true}
       - traefik.http.routers.epos-flower.rule=Host(`${EPOS_DOMAIN}`) && PathPrefix(`/flower`)
       - traefik.http.routers.epos-flower.tls.certresolver=le
-    ports:
-      - 5555:80
 
   redis:
     image: redis:7-alpine
