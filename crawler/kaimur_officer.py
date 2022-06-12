@@ -1,6 +1,7 @@
-from functools import lru_cache
 import logging
 from .core import do_request
+from worker import celery
+import utils
 
 officer_types = {
     132: "District Level Officer",
@@ -50,8 +51,9 @@ def get_all_data(url, payload):
     return items
 
 
-@lru_cache
+@celery.task(name="get_officers")
 def get_officers():
+    cache = utils.get_cache()
     all_items = []
     url = "https://kaimur.nic.in/wp-admin/admin-ajax.php"
     payload = dict(
@@ -63,7 +65,10 @@ def get_officers():
         try:
             tmp_payload = payload.copy()
             tmp_payload["term_slug"] = officer_type
-            officers = get_all_data(url, tmp_payload)
+
+            officers = cache.get(f"get_officers:{officer_type}")
+            if not officers:
+                officers = get_all_data(url, tmp_payload)
             for officer in officers:
                 officer["Type"] = officer_type_name
             all_items.extend(officers)
