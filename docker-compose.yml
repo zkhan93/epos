@@ -5,13 +5,25 @@ services:
     image: ghcr.io/zkhan93/epos:latest
     ports:
       - 80
+    command:
+      [
+        "gunicorn",
+        "wsgi:app",
+        "--bind",
+        "0.0.0.0:80",
+        "--workers",
+        "2",
+        "--log-level=info",
+        "--access-logfile",
+        "-"
+      ]
     environment:
       - CACHE_DIR=/cache
       - CLEAR_CACHE=False
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/1
     volumes:
-      - epos-cache:/cache
+      - cache:/cache
     labels:
       - traefik.enable=${TRAEFIK_ENABLE:-true}
       - traefik.http.routers.khancave-epos.rule=Host(`${EPOS_DOMAIN}`)
@@ -20,34 +32,34 @@ services:
 
   worker:
     image: ghcr.io/zkhan93/epos:latest
-    entrypoint:
+    command:
       [
         "celery",
-        "worker",
         "--app",
         "server.celery",
+        "worker",
         "--pool",
         "eventlet",
         "--autoscale",
         "10,2",
-        "--loglevel=info"
+        "--loglevel=info",
+        "--concurrency=10"
       ]
     volumes:
       - .:/usr/src/app
-      - epos-cache:/cache
+      - cache:/cache
     environment:
       - CACHE_DIR=/cache
       - CLEAR_CACHE=False
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/1
-
     depends_on:
-      - web
       - redis
 
   flower:
     image: ghcr.io/zkhan93/epos:latest
-    entrypoint:
+    entrypoint: [ "/app/scripts/wait_for_celery_workers.sh" ]
+    command:
       [
         "celery",
         "--app",
@@ -64,9 +76,11 @@ services:
       - traefik.enable=${TRAEFIK_ENABLE:-true}
       - traefik.http.routers.epos-flower.rule=Host(`${EPOS_DOMAIN}`) && PathPrefix(`/flower`)
       - traefik.http.routers.epos-flower.tls.certresolver=le
+    depends_on:
+      - worker
 
   redis:
     image: redis:7-alpine
 
 volumes:
-  epos-cache:
+  cache:
