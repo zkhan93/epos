@@ -65,10 +65,11 @@ def get_officers():
         try:
             tmp_payload = payload.copy()
             tmp_payload["term_slug"] = officer_type
-
-            officers = cache.get(f"get_officers:{officer_type}")
+            key = f"get_officers:{officer_type}"
+            officers = cache.get(key)
             if not officers:
                 officers = get_all_data(url, tmp_payload)
+                cache.set(key, officers)
             for officer in officers:
                 officer["Type"] = officer_type_name
             all_items.extend(officers)
