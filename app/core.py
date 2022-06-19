@@ -1,23 +1,18 @@
 import traceback
-from flask import Flask, jsonify, request
-from flask_cors import CORS
+import sys
+import logging
+from flask import jsonify, request
 import crawler.epos as epos
 import crawler.epos.collection as collection
 import crawler.kaimur_officer as kaimur_officer
-import logging
-import sys
-from utils import init_celery
-from worker import celery
+from flask import Blueprint
+from utils import create_celery, init_celery
 
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
+# from app import app, celery
 
-logging.info("Log initialized !!")
-
-app = Flask("app")
-CORS(app)
-celery = init_celery(celery, app)
+bp = Blueprint("core", __name__, url_prefix="", static_folder="../static")
+celery = create_celery()
+celery = init_celery(celery, bp)
 
 
 def error_response():
@@ -33,13 +28,13 @@ def error_response():
     )
 
 
-@app.route("/")
-@app.route("/<file>")
+@bp.route("/")
+@bp.route("/<file>")
 def index(file="index"):
-    return app.send_static_file(f"{file}.html")
+    return bp.send_static_file(f"{file}.html")
 
 
-@app.route("/tasks/<task_id>", methods=["GET"])
+@bp.route("/tasks/<task_id>", methods=["GET"])
 def get_status(task_id):
     task_result = celery.AsyncResult(task_id)
     result = task_result.result
@@ -59,7 +54,7 @@ def get_status(task_id):
     )
 
 
-@app.route("/get-sales-details")
+@bp.route("/get-sales-details")
 def get_sales_details():
     logging.info("api request")
     # for shahina parveen
@@ -78,7 +73,7 @@ def get_sales_details():
         return error_response()
 
 
-@app.route("/get-rc-details")
+@bp.route("/get-rc-details")
 def get_rc_details():
     logging.info("api request")
     # for Ramkut singh
@@ -94,7 +89,7 @@ def get_rc_details():
         return error_response()
 
 
-@app.route("/get-stock-details")
+@bp.route("/get-stock-details")
 def get_stock_details():
     logging.info("api request")
     # for shahina parveen
@@ -113,13 +108,13 @@ def get_stock_details():
         return error_response()
 
 
-@app.route("/get-kaimur-officers")
+@bp.route("/get-kaimur-officers")
 def get_kaimur_officers():
     task = kaimur_officer.get_officers.delay()
     return jsonify(dict(task_id=task.id))
 
 
-@app.route("/get-collection-summary")
+@bp.route("/get-collection-summary")
 def get_collection_summary():
     fpsid = request.args["fpsid"]
     dist_code = request.args["dist_code"]
@@ -131,7 +126,7 @@ def get_collection_summary():
     return jsonify(dict(task_id=task.id))
 
 
-@app.route("/get-epds-rc-details")
+@bp.route("/get-epds-rc-details")
 def get_epds_rc_details():
     rc_number = request.args["rcnumber"]
     dist_code = request.args["dist_code"]

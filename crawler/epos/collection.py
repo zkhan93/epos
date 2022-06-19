@@ -1,6 +1,6 @@
 from collections import defaultdict
 from datetime import datetime
-from worker import celery
+from celery import shared_task
 import utils
 import logging
 from .epos import get_sales_details, get_rc_details
@@ -64,7 +64,7 @@ def _get_summary(date, sales, month, year):
     return summary
 
 
-@celery.task(name="get_summary")
+@shared_task(name="get_summary")
 def get_summary(fpsid=123300100909, month=3, year=2022, dist_code=233):
     cache = utils.get_cache()
     sales = get_sales_details.run(

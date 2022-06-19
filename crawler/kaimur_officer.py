@@ -1,6 +1,6 @@
 import logging
 from .core import do_request
-from worker import celery
+from celery import shared_task
 import utils
 
 officer_types = {
@@ -51,7 +51,7 @@ def get_all_data(url, payload):
     return items
 
 
-@celery.task(name="get_officers")
+@shared_task(name="get_officers")
 def get_officers():
     cache = utils.get_cache()
     all_items = []
