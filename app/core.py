@@ -84,7 +84,7 @@ def get_rc_details():
     cache = request.args.get("cache", "true").lower() == "true"
     try:
         task = epos.get_rc_details.delay(
-            rc_number=rc_number, month=month, year=year, cache=cache
+            rc_number=rc_number, month=month, year=year, use_cache=cache
         )
         return jsonify(dict(task_id=task.id))
     except Exception:
@@ -136,7 +136,7 @@ def get_epds_rc_details():
     cache = request.args.get("cache", "true").lower() == "true"
     try:
         task = epos.get_rc_details_from_epds.delay(
-            rc_number=rc_number, dist_code=dist_code, cache=cache
+            rc_number=rc_number, dist_code=dist_code, use_cache=cache
         )
     except Exception as ex:
         logging.exception("failed to get data")
