@@ -74,10 +74,10 @@ def get_sales_details(fpsid=123300100909, month=3, year=2022, dist_code=233):
 
 
 @shared_task(name="get_rc_details_from_epds")
-def get_rc_details_from_epds(rc_number=10310060087015900034, dist_code=233):
+def get_rc_details_from_epds(rc_number=10310060087015900034, dist_code=233, cache=True):
     cache = utils.get_cache()
     cache_key = f"rc_details_epds:{rc_number}:{dist_code}"
-    data = cache.get(cache_key)
+    data = cache.get(cache_key) if cache else None
     if not data:
         content = _fetch_rc_detailsepds(rc_number=rc_number, dist_code=dist_code)
         members, extra = EPDSRCDetailParser().parse(content)
@@ -95,11 +95,11 @@ def get_rc_details_from_epds(rc_number=10310060087015900034, dist_code=233):
 
 
 @shared_task(name="get_rc_details")
-def get_rc_details(rc_number=10310060087015900034, month=3, year=2022):
+def get_rc_details(rc_number=10310060087015900034, month=3, year=2022, cache=True):
     cache = utils.get_cache()
     cache_key = f"rc_details:{rc_number}:{month}:{year}"
-    data = cache.get(cache_key)
-    logging.info(data)
+    data = cache.get(cache_key) if cache else None
+    logging.debug(data)
     if not data:
         content = _fetch_rc_details(rc_number=rc_number, month=month, year=year)
         members, transactions = RCDetailParser().parse(content)

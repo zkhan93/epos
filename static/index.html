@@ -38,9 +38,25 @@
         </h1>
 
         <div>{{fpsid}}</div>
-        <button class="btn btn-sm btn-primary" @click="fetch_items">
-          Reload
-        </button>
+        <div class="d-flex flex-column m-2">
+          <button class="btn btn-sm btn-primary" @click="fetch_items">
+            Reload
+          </button>
+          <div class="mt-2">
+            <div class="form-check form-switch form-check-inline">
+              <label class="form-check-label" for="flexSwitchCache"
+                >Use Cache</label
+              >
+              <input
+                class="form-check-input"
+                type="checkbox"
+                role="switch"
+                id="flexSwitchCache"
+                v-model="cache"
+              />
+            </div>
+          </div>
+        </div>
       </div>
       <div>
         <label>Select Month</label>
@@ -299,6 +315,7 @@
             ],
             current_task_id: null,
             task_timeout: undefined,
+            cache: true,
           };
         },
         computed: {
@@ -405,6 +422,7 @@
                   fpsid: this.fpsid,
                   month: this.month,
                   year: this.year,
+                  cache: this.cache,
                 },
               })
               .then((res) => {
@@ -459,6 +477,7 @@
                   rcnumber: item[this.rc_key],
                   month: this.month,
                   year: this.year,
+                  cache: this.cache,
                 },
               })
               .then((res) => {

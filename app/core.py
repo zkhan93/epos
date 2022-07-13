@@ -81,8 +81,11 @@ def get_rc_details():
     rc_number = request.args["rcnumber"]
     month = request.args["month"]
     year = request.args["year"]
+    cache = request.args.get("cache", "true").lower() == "true"
     try:
-        task = epos.get_rc_details.delay(rc_number=rc_number, month=month, year=year)
+        task = epos.get_rc_details.delay(
+            rc_number=rc_number, month=month, year=year, cache=cache
+        )
         return jsonify(dict(task_id=task.id))
     except Exception:
         logging.exception("failed to get data")
@@ -130,9 +133,10 @@ def get_collection_summary():
 def get_epds_rc_details():
     rc_number = request.args["rcnumber"]
     dist_code = request.args["dist_code"]
+    cache = request.args.get("cache", "true").lower() == "true"
     try:
         task = epos.get_rc_details_from_epds.delay(
-            rc_number=rc_number, dist_code=dist_code
+            rc_number=rc_number, dist_code=dist_code, cache=cache
         )
     except Exception as ex:
         logging.exception("failed to get data")
