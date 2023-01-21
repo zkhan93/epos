@@ -1,522 +1,465 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <!-- Required meta tags -->
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <!-- Bootstrap CSS -->
-    <link
-      href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css"
-      rel="stylesheet"
-      integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3"
-      crossorigin="anonymous"
-    />
+<head>
+  <!-- Required meta tags -->
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>EPOS Bihar</title>
-  </head>
-  <body>
-    <!-- Optional JavaScript; choose one of the two! -->
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous" />
 
-    <!-- Option 1: Bootstrap Bundle with Popper -->
-    <script
-      src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"
-      integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p"
-      crossorigin="anonymous"
-    ></script>
+  <title>EPOS Bihar</title>
+</head>
 
-    <!-- Vue.js 3 -->
+<body>
+  <!-- Optional JavaScript; choose one of the two! -->
 
-    <script src="https://cdn.jsdelivr.net/npm/axios@0.26.1/dist/axios.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/vue@3.2.31/dist/vue.global.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/lodash/4.13.1/lodash.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/moment@2.29.2/moment.min.js"></script>
-    <div id="app" class="container">
-      <div class="text-center mb-4 mt-3">
-        <h1>
-          EPOS Bihar
-        </h1>
+  <!-- Option 1: Bootstrap Bundle with Popper -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p"
+    crossorigin="anonymous"></script>
 
-        <div>{{fpsid}}</div>
-        <div class="d-flex flex-column m-2">
-          <button class="btn btn-sm btn-primary" @click="fetch_items">
-            Reload
-          </button>
-          <div class="mt-2">
-            <div class="form-check form-switch form-check-inline">
-              <label class="form-check-label" for="flexSwitchCache"
-                >Use Cache</label
-              >
-              <input
-                class="form-check-input"
-                type="checkbox"
-                role="switch"
-                id="flexSwitchCache"
-                v-model="cache"
-              />
-            </div>
+  <!-- Vue.js 3 -->
+
+  <script src="https://cdn.jsdelivr.net/npm/axios@0.26.1/dist/axios.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vue@3.2.31/dist/vue.global.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/lodash/4.13.1/lodash.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/moment@2.29.2/moment.min.js"></script>
+  <div id="app" class="container">
+    <div class="text-center mb-4 mt-3">
+      <h1>
+        EPOS Bihar
+      </h1>
+
+      <div>{{fpsid}}</div>
+      <div class="d-flex flex-column m-2">
+        <button class="btn btn-sm btn-primary" @click="fetch_items">
+          Reload
+        </button>
+        <div class="mt-2">
+          <div class="form-check form-switch form-check-inline">
+            <label class="form-check-label" for="flexSwitchCache">Use Cache</label>
+            <input class="form-check-input" type="checkbox" role="switch" id="flexSwitchCache" v-model="cache" />
           </div>
         </div>
       </div>
+    </div>
+    <div>
+      <label>Select Month</label>
+      <div class="input-group mb-3">
+        <select class="form-select" v-model="month">
+          <option v-bind:value="m" v-for="m in months" :key="m.name">{{m.name}}</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="mb-3">
+      <label>Search</label>
+      <input v-model="search_rc_number" class="form-control" type="text" inputmode="numeric"
+        placeholder="Search by RC Number" />
+    </div>
+    <div v-if="loading">
+      loading...
+    </div>
+
+    <div class="error" v-if="error">
+      <div class="alert alert-danger" role="alert">
+        <h4 class="alert-heading">Error Occurred!</h4>
+        <p>{{error}}</p>
+        <hr />
+        <pre><code>{{traceback}}</code></pre>
+      </div>
+    </div>
+    <div v-if="!loading && !error">
+      <div class="row">
+        <div class="col">
+          <h4>Total entries {{items.length}}</h4>
+        </div>
+        <div class="col">
+          <div class="input-group">
+            <span class="input-group-text" id="basic-addon1">Sort By</span>
+            <select class="form-select" v-model="item_sort_by">
+              <option v-bind:value="col" v-for="col in sort_by_columns" :key="col">{{col}}</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="row mb-2">
+        <div class="col">
+          PHH: <b>{{filter_items("Scheme", "PHH").length}}</b>
+        </div>
+        <div class="col">
+          AAY: <b>{{filter_items("Scheme", "AAY").length}}</b>
+        </div>
+      </div>
+
       <div>
-        <label>Select Month</label>
-        <div class="input-group mb-3">
-          <select class="form-select" v-model="month">
-            <option v-bind:value="m" v-for="m in months" :key="m.name"
-              >{{m.name}}</option
-            >
-          </select>
-        </div>
-      </div>
-
-      <div class="mb-3">
-        <label>Search</label>
-        <input
-          v-model="search_rc_number"
-          class="form-control"
-          type="text"
-          inputmode="numeric"
-          placeholder="Search by RC Number"
-        />
-      </div>
-      <div v-if="loading">
-        loading...
-      </div>
-
-      <div class="error" v-if="error">
-        <div class="alert alert-danger" role="alert">
-          <h4 class="alert-heading">Error Occurred!</h4>
-          <p>{{error}}</p>
-          <hr />
-          <pre><code>{{traceback}}</code></pre>
-        </div>
-      </div>
-      <div v-if="!loading && !error">
-        <div class="row">
-          <div class="col">
-            <h4>Total entries {{items.length}}</h4>
-          </div>
-          <div class="col">
-            <div class="input-group">
-              <span class="input-group-text" id="basic-addon1">Sort By</span>
-              <select class="form-select" v-model="item_sort_by">
-                <option
-                  v-bind:value="col"
-                  v-for="col in sort_by_columns"
-                  :key="col"
-                  >{{col}}</option
-                >
-              </select>
-            </div>
-          </div>
-        </div>
-        <div class="row mb-2">
-          <div class="col">
-            PHH: <b>{{filter_items("Scheme", "PHH").length}}</b>
-          </div>
-          <div class="col">
-            AAY: <b>{{filter_items("Scheme", "AAY").length}}</b>
-          </div>
-        </div>
-
-        <div>
-          <div
-            class="card mb-2"
-            v-for="item in filtered_items"
-            :key="item['Sl No']"
-          >
-            <div class="card-header">
-              <div class="row">
-                <div class="col"><h5>{{item[rc_key]}}</h5></div>
-                <div class="col text-end">
-                  <button
-                    type="button"
-                    class="btn btn-primary btn-sm"
-                    data-bs-toggle="modal"
-                    data-bs-target="#rcDetailsModal"
-                    @click="fetch_rc_details(item)"
-                  >
-                    Details
-                  </button>
-                </div>
+        <div class="card mb-2" v-for="item in filtered_items" :key="item['Sl No']">
+          <div class="card-header">
+            <div class="row">
+              <div class="col">
+                <h5>{{item[rc_key]}}</h5>
+              </div>
+              <div class="col text-end">
+                <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal"
+                  data-bs-target="#rcDetailsModal" @click="fetch_rc_details(item)">
+                  Details
+                </button>
               </div>
             </div>
-            <ul class="list-group">
-              <li class="list-group-item">
-                <template v-for="key in items_columns">
-                  <span class="mb-2">{{key}}: <b>{{item[key]}}</b></span
-                  ><br />
-                </template>
-              </li>
-            </ul>
           </div>
-          <div
-            class="modal"
-            id="rcDetailsModal"
-            tabindex="-1"
-            aria-labelledby="rcDetailsModalLabel"
-            aria-hidden="true"
-          >
-            <div class="modal-dialog">
-              <div class="modal-content">
-                <div class="modal-header">
-                  <div class="modal-title mb-1" id="rcDetailsModalLabel">
-                    <h5>
-                      RC Details
-                    </h5>
-                    {{detail_item && detail_item[rc_key]}}
-                  </div>
-                  <button
-                    type="button"
-                    class="btn-close"
-                    data-bs-dismiss="modal"
-                    aria-label="Close"
-                  ></button>
+          <ul class="list-group">
+            <li class="list-group-item">
+              <template v-for="key in items_columns">
+                <span class="mb-2">{{key}}: <b>{{item[key]}}</b></span><br />
+              </template>
+            </li>
+          </ul>
+        </div>
+        <div class="modal" id="rcDetailsModal" tabindex="-1" aria-labelledby="rcDetailsModalLabel" aria-hidden="true">
+          <div class="modal-dialog">
+            <div class="modal-content">
+              <div class="modal-header">
+                <div class="modal-title mb-1" id="rcDetailsModalLabel">
+                  <h5>
+                    RC Details
+                  </h5>
+                  {{detail_item && detail_item[rc_key]}}
                 </div>
-                <div class="modal-body">
-                  <div v-if="details_loading">Loading details...</div>
-                  <div v-if="members.length || transactions.length">
-                    <div class="row">
-                      <div class="col">
-                        <h6>Total Members: {{members.length}}</h6>
-                      </div>
-                      <div class="col"><h6>Seeded: {{seeded_member}}</h6></div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-body">
+                <div v-if="details_loading">Loading details...</div>
+                <div v-if="members.length || transactions.length">
+                  <div class="row">
+                    <div class="col">
+                      <h6>Total Members: {{members.length}}</h6>
                     </div>
-                    <hr />
-
-                    <h6>Transactions</h6>
-                    <ul class="list-group">
-                      <li
-                        class="list-group-item"
-                        v-for="trans in transactions"
-                        :key="trans['Sl.No']"
-                      >
-                        <template v-for="key in transaction_columns">
-                          <span class="mb-2"
-                            >{{key}}: <b>{{trans[key]}}</b></span
-                          ><br />
-                        </template>
-                      </li>
-                    </ul>
-
-                    <hr />
-                    <h6>Member List</h6>
-                    <ul
-                      class="list-group mb-1"
-                      v-for="member in members"
-                      :key="member['Sl.No']"
-                    >
-                      <li class="list-group-item">
-                        <template v-for="key in details_columns">
-                          <span class="mb-1"
-                            >{{key }}: <b>{{member[key]}}</b></span
-                          ><br />
-                        </template>
-                      </li>
-                    </ul>
-                  </div>
-                  <div v-if="details_error">
-                    <div class="alert alert-danger" role="alert">
-                      <h4 class="alert-heading">Error Occurred!</h4>
-                      <p>{{details_error}}</p>
-                      <hr />
-                      <pre><code>{{details_traceback}}</code></pre>
+                    <div class="col">
+                      <h6>Seeded: {{seeded_member}}</h6>
                     </div>
                   </div>
+                  <hr />
+
+                  <h6>Transactions</h6>
+                  <ul class="list-group">
+                    <li class="list-group-item" v-for="trans in transactions" :key="trans['Sl.No']">
+                      <template v-for="key in transaction_columns">
+                        <span class="mb-2">{{key}}: <b>{{trans[key]}}</b></span><br />
+                      </template>
+                    </li>
+                  </ul>
+
+                  <hr />
+                  <h6>Member List</h6>
+                  <ul class="list-group mb-1" v-for="member in members" :key="member['Sl.No']">
+                    <li class="list-group-item">
+                      <template v-for="key in details_columns">
+                        <span class="mb-1">{{key }}: <b>{{member[key]}}</b></span><br />
+                      </template>
+                    </li>
+                  </ul>
                 </div>
-                <div class="modal-footer">
-                  <button
-                    type="button"
-                    class="btn-close"
-                    data-bs-dismiss="modal"
-                    aria-label="Close"
-                  ></button>
+                <div v-if="details_error">
+                  <div class="alert alert-danger" role="alert">
+                    <h4 class="alert-heading">Error Occurred!</h4>
+                    <p>{{details_error}}</p>
+                    <hr />
+                    <pre><code>{{details_traceback}}</code></pre>
+                  </div>
                 </div>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
               </div>
             </div>
           </div>
         </div>
       </div>
     </div>
-    <script>
-      // POST here https://epos.bihar.gov.in/FPS_Trans_Details.jsp
-      // with
-      // dist_code=233 fps_id=123300100909 month=3 year=2022
-      
-      Vue.createApp({
-        data() {
-          return {
-            item_sort_by: "Date",
-            rc_key: "RC No",
-            loading: false,
-            details_loading: false,
-            dist_code: 233,
-            fpsid: 123300100909,
-            month: {},
-            search_rc_number: "",
-            error: "",
-            traceback: "",
-            details_error: "",
-            details_traceback: "",
-            detail_item: null,
-            items: [],
-            members: [],
-            transactions: [],
-            sort_by_columns: [
-              "RC No",
-              "Date",
-              "Auth Trans Time",
-              "Avail Type",
-              "Portability",
-              "Receipt No",
-              "Scheme",
-            ],
-            transaction_columns: [
-              "Member",
-              "Avail. Date",
-              "Avail. Type",
-              "AvailedFPS",
-              "Month",
-              "Year",
-            ],
-            items_columns: [
-              "RC No",
-              "Date",
-              "Auth Trans Time",
-              "Avail Type",
-              "Wheat(Kg)",
-              "Rice(Kg)",
-              "PMGKAY-Wheat-Old(Kg)",
-              "PMGKAY-Rice-Old(Kg)",
-              "PMGKAY whole chana(Kg)",
-              "PMGKAY Pulse(Kg)",
-              "PMGKAY-Wheat(Kg)",
-              "PMGKAY-Rice(Kg)",
-              "Amount(Rs.)",
-              "Portability",
-              "Receipt No",
-              "Scheme",
-            ],
-            details_columns: [
-              "Member",
-              "Status",
-              "Age",
-              "Gender",
-              "UID Status",
-            ],
-            current_task_id: null,
-            task_timeout: undefined,
-            cache: true,
-          };
+  </div>
+  <script>
+    // POST here https://epos.bihar.gov.in/FPS_Trans_Details.jsp
+    // with
+    // dist_code=233 fps_id=123300100909 month=3 year=2022
+
+    Vue.createApp({
+      data() {
+        return {
+          item_sort_by: "Date",
+          rc_key: "RC No",
+          loading: false,
+          details_loading: false,
+          dist_code: 233,
+          fpsid: 123300100909,
+          month: {},
+          search_rc_number: "",
+          error: "",
+          traceback: "",
+          details_error: "",
+          details_traceback: "",
+          detail_item: null,
+          items: [],
+          members: [],
+          transactions: [],
+          sort_by_columns: [
+            "RC No",
+            "Date",
+            "Auth Trans Time",
+            "Avail Type",
+            "Portability",
+            "Receipt No",
+            "Scheme",
+          ],
+          transaction_columns: [
+            "Member",
+            "Avail. Date",
+            "Avail. Type",
+            "AvailedFPS",
+            "Month",
+            "Year",
+          ],
+          items_columns: [
+            "RC No",
+            "Date",
+            "Auth Trans Time",
+            "Avail Type",
+            "Wheat(Kg)",
+            "Rice(Kg)",
+            "PMGKAY-Wheat-Old(Kg)",
+            "PMGKAY-Rice-Old(Kg)",
+            "PMGKAY whole chana(Kg)",
+            "PMGKAY Pulse(Kg)",
+            "PMGKAY-Wheat(Kg)",
+            "PMGKAY-Rice(Kg)",
+            "Amount(Rs.)",
+            "Portability",
+            "Receipt No",
+            "Scheme",
+          ],
+          details_columns: [
+            "Member",
+            "Status",
+            "Age",
+            "Gender",
+            "UID Status",
+          ],
+          current_task_id: null,
+          task_timeout: undefined,
+          cache: true,
+        };
+      },
+      computed: {
+        seeded_member() {
+          return this.members.filter((mem) => mem["UID Status"] == "Seeded")
+            .length;
         },
-        computed: {
-          seeded_member() {
-            return this.members.filter((mem) => mem["UID Status"] == "Seeded")
-              .length;
-          },
-          headers() {
-            if (this.items.length > 0) return Object.keys(this.items[0]);
-            else return [];
-          },
-          filtered_items() {
-            if (this.search_rc_number)
-              return this.items.filter(
-                (item) =>
-                  item[this.rc_key].startsWith(this.search_rc_number) ||
-                  item[this.rc_key].endsWith(this.search_rc_number)
-              );
-            else return this.items;
-          },
-          months() {
-            var month_names = [
-              "January",
-              "February",
-              "March",
-              "April",
-              "May",
-              "June",
-              "July",
-              "August",
-              "September",
-              "October",
-              "November",
-              "December",
-            ];
-      
-            var current_year = new Date().getFullYear()
-            
-            var months = [];
-            [-1, 0, 1].forEach((year_dt, year_index) => {
-              var tmp_year = current_year + year_dt
-              month_names.forEach((name, month_index) => {
-                item = { 
-                  year:tmp_year,
-                  month: month_index + 1,
-                  name: `${name} ${tmp_year}`
-                }
-                months.push(item);
-                if (this.isCurrentMonth(item)){
-                  this.month = item
-                }
-              });
-            })
-            return months;
-          },
+        headers() {
+          if (this.items.length > 0) return Object.keys(this.items[0]);
+          else return [];
         },
-        watch: {
-          item_sort_by() {
-            this.filtered_items.sort((a, b) => {
-              if (this.item_sort_by == "Date")
-                return this.compare_date(a["Date"], b["Date"]);
-              var a_attr = a[this.item_sort_by].toUpperCase();
-              var b_attr = b[this.item_sort_by].toUpperCase();
-              if (a_attr < b_attr) return -1;
-              if (a_attr > b_attr) return 1;
-              return 0;
+        filtered_items() {
+          if (this.search_rc_number)
+            return this.items.filter(
+              (item) =>
+                item[this.rc_key].startsWith(this.search_rc_number) ||
+                item[this.rc_key].endsWith(this.search_rc_number)
+            );
+          else return this.items;
+        },
+        months() {
+          var month_names = [
+            "January",
+            "February",
+            "March",
+            "April",
+            "May",
+            "June",
+            "July",
+            "August",
+            "September",
+            "October",
+            "November",
+            "December",
+          ];
+
+          var current_year = new Date().getFullYear()
+
+          var months = [];
+          [-1, 0, 1].forEach((year_dt, year_index) => {
+            var tmp_year = current_year + year_dt
+            month_names.forEach((name, month_index) => {
+              item = {
+                year: tmp_year,
+                month: month_index + 1,
+                name: `${name} ${tmp_year}`
+              }
+              months.push(item);
+              if (this.isCurrentMonth(item)) {
+                this.month = item
+              }
             });
-          },
-          month() {
-            this.fetch_items();
-          },
+          })
+          return months;
         },
-        mounted() {
+      },
+      watch: {
+        item_sort_by() {
+          this.filtered_items.sort((a, b) => {
+            if (this.item_sort_by == "Date")
+              return this.compare_date(a["Date"], b["Date"]);
+            var a_attr = a[this.item_sort_by].toUpperCase();
+            var b_attr = b[this.item_sort_by].toUpperCase();
+            if (a_attr < b_attr) return -1;
+            if (a_attr > b_attr) return 1;
+            return 0;
+          });
+        },
+        month() {
           this.fetch_items();
         },
-        methods: {
-          isCurrentMonth(item){
-            var month= new Date().getMonth() + 1
-            var year= new Date().getFullYear()
-            return item.month == month && item.year == year
-          },
-          filter_items(key, value) {
-            return this.items.filter((item) => item[key] === value);
-          },
-          compare_date(a, b) {
-            var a_date = moment(a, "DD-MM-YYYY");
-            var b_date = moment(b, "DD-MM-YYYY");
-            if (a_date.isAfter(b_date)) return -1;
-            if (b_date.isAfter(a_date)) return 1;
-            return 0;
-          },
-          await_task(task_id, success, error) {
-            axios.get(`/tasks/${task_id}`).then((res) => {
-              if (res.data.status === "SUCCESS") {
-                success(res.data);
-              } else if (
-                res.data.status === "FAILURE" ||
-                res.data.status === "REVOKED"
-              ) {
-                error(res.data);
-              } else {
-                // call this method again in 3 sec
-                if (this.latest_task_id != task_id) {
-                  this.task_timeout = setTimeout(() => {
-                    this.await_task(task_id, success, error);
-                  }, 1000);
-                }
-              }
-              // else it being processing in one way or the other
-            });
-          },
-          fetch_items() {
-            this.error = "";
-            this.traceback = "";
-            this.loading = true;
-            axios
-              .get("/get-sales-details", {
-                params: {
-                  dist_code: this.dist_code,
-                  fpsid: this.fpsid,
-                  month: this.month.month,
-                  year: this.month.year,
-                  cache: this.cache,
-                },
-              })
-              .then((res) => {
-                this.current_task_id = res.data.task_id;
-                if (this.task_timeout != undefined)
-                  clearTimeout(this.task_timeout);
-                this.await_task(
-                  res.data.task_id,
-                  (data) => {
-                    this.items.splice(0, data.result.length);
-                    data.result.forEach((item) => {
-                      this.items.push(item);
-                    });
-                    this.loading = false;
-                  },
-                  (data) => {
-                    this.error = data.result.error;
-                    this.traceback = data.result.traceback;
-                    this.loading = false;
-                  }
-                );
-              })
-              .catch((error) => {
-                var parsed_error = this.parse_error(error);
-                this.error = parsed_error.error;
-                this.traceback = parsed_error.traceback;
-                this.loading = false;
-              });
-          },
-          parse_error(error) {
-            var msg = error;
-            var traceback = [];
-            if (error && error.response) {
-              msg = error.response;
-              if (error.response.data) {
-                msg = error.response.data;
-                if (error.response.data.error) msg = error.response.data.error;
-                if (error.response.data.traceback)
-                  traceback = error.response.data.traceback;
+      },
+      mounted() {
+        this.fetch_items();
+      },
+      methods: {
+        isCurrentMonth(item) {
+          var month = new Date().getMonth() + 1
+          var year = new Date().getFullYear()
+          return item.month == month && item.year == year
+        },
+        filter_items(key, value) {
+          return this.items.filter((item) => item[key] === value);
+        },
+        compare_date(a, b) {
+          var a_date = moment(a, "DD-MM-YYYY");
+          var b_date = moment(b, "DD-MM-YYYY");
+          if (a_date.isAfter(b_date)) return -1;
+          if (b_date.isAfter(a_date)) return 1;
+          return 0;
+        },
+        await_task(task_id, success, error) {
+          axios.get(`/tasks/${task_id}`).then((res) => {
+            if (res.data.status === "SUCCESS") {
+              success(res.data);
+            } else if (
+              res.data.status === "FAILURE" ||
+              res.data.status === "REVOKED"
+            ) {
+              error(res.data);
+            } else {
+              // call this method again in 3 sec
+              if (this.latest_task_id != task_id) {
+                this.task_timeout = setTimeout(() => {
+                  this.await_task(task_id, success, error);
+                }, 1000);
               }
             }
-            return { error: msg, traceback: traceback };
-          },
-          fetch_rc_details(item) {
-            this.detail_item = item;
-            this.details_loading = true;
-            this.members = [];
-            this.transactions = [];
-            axios
-              .get("/get-rc-details", {
-                params: {
-                  rcnumber: item[this.rc_key],
-                  month: this.month.month,
-                  year: this.month.year,
-                  cache: this.cache,
-                },
-              })
-              .then((res) => {
-                this.current_task_id = res.data.task_id;
-                if (this.task_timeout != undefined)
-                  clearTimeout(this.task_timeout);
-                this.await_task(
-                  res.data.task_id,
-                  (data) => {
-                    this.members.splice(0, this.members.length);
-                    data.result.members.forEach((mem) => {
-                      this.members.push(mem);
-                    });
-                    this.transactions = data.result.transactions;
-                    this.details_loading = false;
-                  },
-                  (data) => {
-                    this.error = data.result.error;
-                    this.traceback = data.result.traceback;
-                    this.details_loading = false;
-                  }
-                );
-              })
-              .catch((error) => {
-                var parsed_error = this.parse_error(error);
-                this.details_error = parsed_error.error;
-                this.details_traceback = parsed_error.traceback;
-                this.details_loading = false;
-              });
-          },
+            // else it being processing in one way or the other
+          });
         },
-      }).mount("#app");
-    </script>
-  </body>
+        fetch_items() {
+          this.error = "";
+          this.traceback = "";
+          this.loading = true;
+          axios
+            .get("/get-sales-details", {
+              params: {
+                dist_code: this.dist_code,
+                fpsid: this.fpsid,
+                month: this.month.month,
+                year: this.month.year,
+                cache: this.cache,
+              },
+            })
+            .then((res) => {
+              this.current_task_id = res.data.task_id;
+              if (this.task_timeout != undefined)
+                clearTimeout(this.task_timeout);
+              this.await_task(
+                res.data.task_id,
+                (data) => {
+                  this.items.splice(0, data.result.length);
+                  data.result.forEach((item) => {
+                    this.items.push(item);
+                  });
+                  this.loading = false;
+                },
+                (data) => {
+                  this.error = data.result.error;
+                  this.traceback = data.result.traceback;
+                  this.loading = false;
+                }
+              );
+            })
+            .catch((error) => {
+              var parsed_error = this.parse_error(error);
+              this.error = parsed_error.error;
+              this.traceback = parsed_error.traceback;
+              this.loading = false;
+            });
+        },
+        parse_error(error) {
+          var msg = error;
+          var traceback = [];
+          if (error && error.response) {
+            msg = error.response;
+            if (error.response.data) {
+              msg = error.response.data;
+              if (error.response.data.error) msg = error.response.data.error;
+              if (error.response.data.traceback)
+                traceback = error.response.data.traceback;
+            }
+          }
+          return { error: msg, traceback: traceback };
+        },
+        fetch_rc_details(item) {
+          this.detail_item = item;
+          this.details_loading = true;
+          this.members = [];
+          this.transactions = [];
+          axios
+            .get("/get-rc-details", {
+              params: {
+                rcnumber: item[this.rc_key],
+                month: this.month.month,
+                year: this.month.year,
+                cache: this.cache,
+              },
+            })
+            .then((res) => {
+              this.current_task_id = res.data.task_id;
+              if (this.task_timeout != undefined)
+                clearTimeout(this.task_timeout);
+              this.await_task(
+                res.data.task_id,
+                (data) => {
+                  this.members.splice(0, this.members.length);
+                  data.result.members.forEach((mem) => {
+                    this.members.push(mem);
+                  });
+                  this.transactions = data.result.transactions;
+                  this.details_loading = false;
+                },
+                (data) => {
+                  this.error = data.result.error;
+                  this.traceback = data.result.traceback;
+                  this.details_loading = false;
+                }
+              );
+            })
+            .catch((error) => {
+              var parsed_error = this.parse_error(error);
+              this.details_error = parsed_error.error;
+              this.details_traceback = parsed_error.traceback;
+              this.details_loading = false;
+            });
+        },
+      },
+    }).mount("#app");
+  </script>
+</body>
+
 </html>
