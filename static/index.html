@@ -61,16 +61,8 @@
       <div>
         <label>Select Month</label>
         <div class="input-group mb-3">
-          <input
-            name="year"
-            v-model="year"
-            class="form-control"
-            type="number"
-            aria-label="Year"
-            placeholder="Year"
-          />
           <select class="form-select" v-model="month">
-            <option v-bind:value="m.index" v-for="m in months" :key="m.index"
+            <option v-bind:value="m" v-for="m in months" :key="m.name"
               >{{m.name}}</option
             >
           </select>
@@ -250,7 +242,7 @@
       // POST here https://epos.bihar.gov.in/FPS_Trans_Details.jsp
       // with
       // dist_code=233 fps_id=123300100909 month=3 year=2022
-      console.log(new Date().getMonth());
+      
       Vue.createApp({
         data() {
           return {
@@ -260,8 +252,7 @@
             details_loading: false,
             dist_code: 233,
             fpsid: 123300100909,
-            year: new Date().getFullYear(),
-            month: new Date().getMonth() + 1,
+            month: {},
             search_rc_number: "",
             error: "",
             traceback: "",
@@ -337,7 +328,7 @@
             else return this.items;
           },
           months() {
-            var names = [
+            var month_names = [
               "January",
               "February",
               "March",
@@ -351,10 +342,24 @@
               "November",
               "December",
             ];
+      
+            var current_year = new Date().getFullYear()
+            
             var months = [];
-            names.forEach((name, index) => {
-              months.push({ index: index + 1, name: name });
-            });
+            [-1, 0, 1].forEach((year_dt, year_index) => {
+              var tmp_year = current_year + year_dt
+              month_names.forEach((name, month_index) => {
+                item = { 
+                  year:tmp_year,
+                  month: month_index + 1,
+                  name: `${name} ${tmp_year}`
+                }
+                months.push(item);
+                if (this.isCurrentMonth(item)){
+                  this.month = item
+                }
+              });
+            })
             return months;
           },
         },
@@ -370,9 +375,6 @@
               return 0;
             });
           },
-          year() {
-            this.fetch_items();
-          },
           month() {
             this.fetch_items();
           },
@@ -381,6 +383,11 @@
           this.fetch_items();
         },
         methods: {
+          isCurrentMonth(item){
+            var month= new Date().getMonth() + 1
+            var year= new Date().getFullYear()
+            return item.month == month && item.year == year
+          },
           filter_items(key, value) {
             return this.items.filter((item) => item[key] === value);
           },
@@ -420,8 +427,8 @@
                 params: {
                   dist_code: this.dist_code,
                   fpsid: this.fpsid,
-                  month: this.month,
-                  year: this.year,
+                  month: this.month.month,
+                  year: this.month.year,
                   cache: this.cache,
                 },
               })
@@ -475,8 +482,8 @@
               .get("/get-rc-details", {
                 params: {
                   rcnumber: item[this.rc_key],
-                  month: this.month,
-                  year: this.year,
+                  month: this.month.month,
+                  year: this.month.year,
                   cache: this.cache,
                 },
               })
