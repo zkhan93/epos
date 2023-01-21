@@ -7,7 +7,7 @@ on:
       - master
 
 jobs:
-  build-and-push-merger:
+  build-and-push:
     runs-on: ubuntu-latest
     permissions:
       packages: write
@@ -32,10 +32,9 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push Docker image for merger
+      - name: Build and push Docker image for epos
         uses: docker/build-push-action@v3
         with:
-          context: merger
           push: true
           platforms: linux/amd64,linux/arm64,linux/arm/v7
           cache-from: type=gha
