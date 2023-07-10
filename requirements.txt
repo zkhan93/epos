@@ -8,3 +8,4 @@ celery==5.2.7
 redis==4.3.3
 flower==1.0.0
 eventlet==0.33.1
+dnspython==2.2.1
