@@ -65,8 +65,9 @@
           </select>
         </div>
       </div>
-      <div v-if="loading">
-        Loading...
+      <div v-if="loading" class="text-center">
+        <span class="spinner-border" role="status"></span>
+        <div>Loading...</div>
       </div>
 
       <div class="error" v-if="error">

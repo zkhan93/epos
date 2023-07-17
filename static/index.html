@@ -70,8 +70,9 @@
       <input v-model="search_rc_number" class="form-control" type="text" inputmode="numeric"
         placeholder="Search by RC Number" />
     </div>
-    <div v-if="loading">
-      loading...
+    <div v-if="loading" class="text-center">
+      <span class="spinner-border" role="status"></span>
+      <div>Loading...</div>
     </div>
 
     <div class="error" v-if="error">
