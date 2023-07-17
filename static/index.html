@@ -29,15 +29,25 @@
   <script src="https://cdn.jsdelivr.net/npm/moment@2.29.2/moment.min.js"></script>
   <div id="app" class="container">
     <div class="text-center mb-4 mt-3">
-      <h1>
+
+      <div class="d-flex gap-2" >
+        <a href="/" type="button" class="btn btn-primary"> Home</a>
+        <a href="/collection" type="button" class="btn btn-secondary"> Collection Amount</a>
+        <a href="/stock" type="button" class="btn btn-secondary"> Stock Details</a>
+      </div>
+
+      <h1 class="mt-3">
         EPOS Bihar
       </h1>
 
       <div>{{fpsid}}</div>
-      <div class="d-flex flex-column m-2">
-        <button class="btn btn-sm btn-primary" @click="fetch_items">
-          Reload
-        </button>
+      
+      <button class="btn btn-sm btn-primary m-3" @click="fetch_items">
+        Reload
+      </button>
+
+    
+      <div class="d-flex flex-column m-2">    
         <div class="mt-2">
           <div class="form-check form-switch form-check-inline">
             <label class="form-check-label" for="flexSwitchCache">Use Cache</label>

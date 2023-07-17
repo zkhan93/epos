@@ -7,7 +7,7 @@ logging.basicConfig(level=logging.INFO)
 
 def do_request(url, payload):
 
-    logging.info("hitting service brace!!!")
+    logging.info("hitting service brace!!")
     try:
         res = requests.post(
             url,

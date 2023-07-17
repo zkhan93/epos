@@ -2,36 +2,31 @@ version: "3"
 
 services:
   web:
-    image: ghcr.io/zkhan93/epos:latest
+    build: .
     ports:
-      - 80
+      - 8088:80
     command:
       [
-        "gunicorn",
-        "wsgi:app",
-        "--bind",
-        "0.0.0.0:80",
-        "--workers",
-        "2",
-        "--log-level=info",
-        "--access-logfile",
-        "-"
+        "flask",
+        "run",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "80",
       ]
     environment:
+      - FLASK_ENV=development
       - CACHE_DIR=/cache
       - CLEAR_CACHE=False
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/1
     volumes:
       - cache:/cache
-    labels:
-      - traefik.enable=${TRAEFIK_ENABLE:-true}
-      - traefik.http.routers.khancave-epos.rule=Host(`${EPOS_DOMAIN}`)
-      - traefik.http.routers.khancave-epos.tls.certresolver=le
+      - ./:/app
     restart: unless-stopped
 
   worker:
-    image: ghcr.io/zkhan93/epos:latest
+    build: .
     command:
       [
         "celery",

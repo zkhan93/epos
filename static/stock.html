@@ -33,12 +33,20 @@
     <script src="https://cdn.jsdelivr.net/npm/moment@2.29.2/moment.min.js"></script>
     <div id="app" class="container">
       <div class="text-center mb-4 mt-3">
-        <h1>
+        
+        <div class="d-flex gap-2" >
+          <a href="/" type="button" class="btn btn-secondary"> Home</a>
+          <a href="/collection" type="button" class="btn btn-secondary"> Collection Amount</a>
+          <a href="/stock" type="button" class="btn btn-primary"> Stock Details</a>
+        </div>
+
+        <h1 class="mt-3">
           Stock Details
         </h1>
 
         <div>{{fpsid}}</div>
-        <button class="btn btn-sm btn-primary" @click="fetch_items">
+
+        <button class="btn btn-sm btn-primary m-3" @click="fetch_items">
           Reload
         </button>
       </div>
