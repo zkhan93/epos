@@ -44,9 +44,31 @@ def _fetch_stock_details(fpsid, month, year, dist_code):
         "https://epos.bihar.gov.in/fps_stock_register.action", payload
     ).text
 
+def _get_epds_hidden_fields(url):
+    # do a get call fetch the __VIEWSTATE __EVENTVALIDATION and __VIEWSTATEGENERATOR values then do a post call
+    # fetching fresh values is not required as per testing but keeping it here for reference
+    # valid for "https://epds.bihar.gov.in/SearchByRCID.aspx"
+    import requests
+    import re
+    try:
+        res = requests.get(url)
+    except Exception:
+        logging.exception(f"failed to get data from server {url}")
+    else:
+        content = res.text
+        viewstate_patter = re.compile(r'<input type="hidden" name="__VIEWSTATE" id="__VIEWSTATE" value="(.*)" />')
+        viewstategenerator_pattern = re.compile(r'<input type="hidden" name="__VIEWSTATEGENERATOR" id="__VIEWSTATEGENERATOR" value="(.*)" />')
+        eventvalidation_pattern = re.compile(r'<input type="hidden" name="__EVENTVALIDATION" id="__EVENTVALIDATION" value="(.*)" />')
+        viewstate = viewstate_patter.search(content).group(1)
+        viewstategenerator = viewstategenerator_pattern.search(content).group(1)
+        eventvalidation = eventvalidation_pattern.search(content).group(1)
+        return viewstate, viewstategenerator, eventvalidation
+
 
 def _fetch_rc_detailsepds(rc_number="10310060087015900096", dist_code="233"):
     """fetches RC details from epds.bihar.gov.in"""
+    url = "https://epds.bihar.gov.in/SearchByRCID.aspx"     
+    # viewstate,viewstategenerator,eventvalidation =  _get_epds_hidden_fields(url)
     payload = {
         "__EVENTTARGET": "",
         "__EVENTARGUMENT": "",
@@ -59,7 +81,7 @@ def _fetch_rc_detailsepds(rc_number="10310060087015900096", dist_code="233"):
         "ctl00$ContentPlaceHolder2$btnsearch": "Search",
     }
     return do_request(
-        "http://epds.bihar.gov.in/SearchByRCID.aspx",
+        url,
         payload,
     ).text
 
@@ -106,9 +128,9 @@ def get_rc_details_from_epds(
         )
     else:
         members, extra = data["members"], data["extra"]
-        res = {"members": members}
-        if extra:
-            res.update(extra)
+    res = {"members": members}
+    if extra:
+        res.update(extra)
     return res
 
 

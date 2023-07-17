@@ -127,5 +127,12 @@ class EPDSRCDetailParser(BaseParser):
 
     def _parse_extra_info(self, table):
         trs = table.find_all("tr")
+        # extra info tr is 2nd tr, EPDS FPS Code, Scheme and No. of Units
         info_tr = trs[1]
-        return {th.get_text().strip().split(":") for th in info_tr.find_all("th")}
+        extra = {}
+        for th in info_tr.find_all("th"):
+            segments = th.get_text().strip().split(":")
+            if len(segments) > 1:
+                extra[segments[0].strip()] = ' '.join([s.strip() for s in segments[1:]])
+        return extra
+
