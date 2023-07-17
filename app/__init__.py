@@ -20,7 +20,6 @@ def init_app():
     from . import core
 
     app.register_blueprint(core.bp)
-    print(app.url_map)
     return app, celery
 
 
