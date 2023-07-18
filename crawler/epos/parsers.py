@@ -107,10 +107,11 @@ class StockDetailParser(BaseParser):
 class EPDSRCDetailParser(BaseParser):
     def parse(self, content):
         root_bs = BeautifulSoup(content, features="html.parser")
-        table = root_bs.find("table", {"id": "ContentPlaceHolder2_gridview_member"})
-        headers = self._parse_header(table)
-        members = self._parse_members(table)
-        extra = self._parse_extra_info(table)
+        selector = {"id": "ContentPlaceHolder2_gridview_member"}
+        table = root_bs.find("table", selector)
+        headers = self._parse_header(table) if table else []
+        members = self._parse_members(table) if table else []
+        extra = self._parse_extra_info(table, root_bs)
         return [dict(zip(headers, member)) for member in members], extra
 
     def _parse_members(self, table):
@@ -125,14 +126,18 @@ class EPDSRCDetailParser(BaseParser):
         ths = header_tr.find_all("th")
         return [th.get_text().strip() for th in ths]
 
-    def _parse_extra_info(self, table):
-        trs = table.find_all("tr")
-        # extra info tr is 2nd tr, EPDS FPS Code, Scheme and No. of Units
-        info_tr = trs[1]
+    def _parse_extra_info(self, table, root_bs):
         extra = {}
-        for th in info_tr.find_all("th"):
-            segments = th.get_text().strip().split(":")
-            if len(segments) > 1:
-                extra[segments[0].strip()] = ' '.join([s.strip() for s in segments[1:]])
+        if table:
+            trs = table.find_all("tr")
+            # extra info tr is 2nd tr, EPDS FPS Code, Scheme and No. of Units
+            info_tr = trs[1]
+            for th in info_tr.find_all("th"):
+                segments = th.get_text().strip().split(":")
+                if len(segments) > 1:
+                    extra[segments[0].strip()] = ' '.join([s.strip() for s in segments[1:]])
+        state_span = root_bs.find("span", {"id": "ContentPlaceHolder2_lbldistcode1"})
+        if state_span:
+            extra["Message"] = state_span.get_text().strip()
         return extra
 
