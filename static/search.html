@@ -46,7 +46,7 @@
                 </select>
             </div>
             <div class="input-group mb-3">
-                <input name="rcnumber" v-model="rcnumber" class="form-control" type="string" aria-label="RC Number"
+                <input name="rcnumber" v-model="rcnumber" class="form-control" type="string" aria-label="Ration Card Number"
                     placeholder="Ration Card Number" />
             </div>
             <div class="d-flex justify-content-center mb-3">
@@ -68,18 +68,20 @@
         <div v-if="!loading && !error">
             <h3 class="text-center" v-if="detail.Message">{{detail.Message}}</h3>
 
-            <div class="card mb-2" v-for="member in detail.members" :key="member['MemberId']">
+            <div class="card mb-2" v-if="Object.keys(detail).length">
                 <div class="card-header">
                   <div class="row">
-                      <h5>{{member["Member Name"]}}</h5>
+                      <template v-for="key in extra_cols">
+                        <span class="mb-2">{{key}}: <b>{{detail[key]}}</b></span><br />
+                      </template>
                   </div>
                 </div>
                 <ul class="list-group">
-                  <li class="list-group-item">
-                    <template v-for="key in columns">
-                      <span class="mb-2">{{key}}: <b>{{member[key]}}</b></span><br />
-                    </template>
-                  </li>
+                    <li class="list-group-item" v-for="member in detail.members" :key="member['MemberId']">
+                        <template v-for="key in member_cols">
+                            <span class="mb-2">{{key}}: <b>{{member[key]}}</b></span><br />
+                        </template>
+                    </li>
                 </ul>
               </div>
 
@@ -150,6 +152,13 @@
                         "Aadhar No.",
                         "MemberId",
                         "Status",
+                    ],
+                    extra_cols: [
+                    "Block",
+                    "District",
+                    "EPDS FPS CODE",
+                    "No. of Units",
+                    "Scheme",
                     ]
                 }
             },
