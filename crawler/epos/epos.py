@@ -95,23 +95,28 @@ def get_sales_details(fpsid=123300100909, month=3, year=2022, dist_code=233):
     table = _fetch_sale_details(
         fpsid=fpsid, month=month, year=year, dist_code=dist_code
     )
-    _, items = SalesDetailsParser().parse(table)
-    for item in items:
-        try:
-            rc_details = get_rc_details(
-                rc_number=item["RC No"], 
-                month=month,
-                year=year,
-            )
-            members = rc_details["members"]
-            transactions = rc_details["transactions"]
-            name = transactions[0]["Member"] if transactions else None
-            total = len(members)
-            seeded = len([m for m in members if m["UID Status"] == "Seeded"])
-        except Exception as ex:
-            logging.exception(ex)
-        else:
-            item["extra"] = {"name": name, "total":total, "seeded":seeded}
+    try:
+        _, items = SalesDetailsParser().parse(table)
+    except IndexError as ex:
+        logging.exception(ex)
+        raise Exception("No records found")
+    else:
+        for item in items:
+            try:
+                rc_details = get_rc_details(
+                    rc_number=item["RC No"], 
+                    month=month,
+                    year=year,
+                )
+                members = rc_details["members"]
+                transactions = rc_details["transactions"]
+                name = transactions[0]["Member"] if transactions else None
+                total = len(members)
+                seeded = len([m for m in members if m["UID Status"] == "Seeded"])
+            except Exception as ex:
+                logging.exception(ex)
+            else:
+                item["extra"] = {"name": name, "total":total, "seeded":seeded}
     return items
 
 

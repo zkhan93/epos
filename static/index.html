@@ -87,8 +87,8 @@
       <div class="alert alert-danger" role="alert">
         <h4 class="alert-heading">Error Occurred!</h4>
         <p>{{error}}</p>
-        <hr />
-        <pre><code>{{traceback}}</code></pre>
+        <!-- <hr /> -->
+        <!-- <pre><code>{{traceback}}</code></pre> -->
       </div>
     </div>
     <div v-if="!loading && !error">
@@ -319,9 +319,6 @@
                 name: `${name} ${tmp_year}`
               }
               months.push(item);
-              if (this.isCurrentMonth(item)) {
-                this.month = item
-              }
             });
           })
           return months;
@@ -344,6 +341,7 @@
         },
       },
       mounted() {
+        this.month = this.months.find((m) => this.isCurrentMonth(m))
         this.fetch_items();
       },
       methods: {
