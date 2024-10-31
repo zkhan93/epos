@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <!-- Daisy UI CSS -->
+
+    <link
+      href="https://cdn.jsdelivr.net/npm/daisyui@4.12.14/dist/full.min.css"
+      rel="stylesheet"
+      type="text/css"
+    />
+
+    <title>PACS</title>
+  </head>
+
+  <body>
+    <!-- Google tag (gtag.js) -->
+    <script
+      async
+      src="https://www.googletagmanager.com/gtag/js?id=G-2JNKEHP5NE"
+    ></script>
+    <script>
+      window.dataLayer = window.dataLayer || []
+      function gtag() {
+        dataLayer.push(arguments)
+      }
+      gtag('js', new Date())
+
+      gtag('config', 'G-2JNKEHP5NE')
+    </script>
+
+    <!-- Vue.js 3 -->
+
+    <script src="https://cdn.jsdelivr.net/npm/axios@0.26.1/dist/axios.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue@3.2.31/dist/vue.global.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/lodash/4.13.1/lodash.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/moment@2.29.2/moment.min.js"></script>
+    <!-- papa js -->
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.0/papaparse.min.js"></script>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.tailwindcss.com?plugins=typography,aspect-ratio,container-queries"></script>
+
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              clifford: '#da373d'
+            }
+          }
+        }
+      }
+    </script>
+    <div id="app" class="max-w-prose mx-auto py-4">
+      <div class="flex gap gap-2 align-items-center p-4 flex-wrap justify-center">
+        <a href="/" type="button" class="btn btn-neutral btn-sm"> Home</a>
+        <a href="/collection" type="button" class="btn btn-neutral btn-sm"> Daily Summary</a>
+        <a href="/stock" type="button" class="btn btn-neutral btn-sm"> Stock</a>
+        <a href="/search" type="button" class="btn btn-neutral btn-sm"> RC Search</a>
+        <a href="/pacs" type="button" class="btn btn-primary btn-sm"> PACS 2024</a>
+      </div>
+      <div class="mb-4  mx-2 flex gap gap-4 items-center">
+        <div class="grow">
+          <input
+            type="text"
+            placeholder="Search"
+            class="input input-sm input-bordered w-full max-w-xs"
+            v-model="search"
+          />
+        </div>
+        <div class="flex gap-4">
+          <button
+            type="button"
+            class="btn btn-sm"
+            @click="changeFontSize('increase')"
+          >
+            +A
+          </button>
+          <button
+            type="button"
+            class="btn btn-sm"
+            @click="changeFontSize('decrease')"
+          >
+            -A
+          </button>
+        </div>
+      </div>
+      <div></div>
+      <table class="table table-zebra max-w-full ">
+        <thead>
+          <tr>
+            <th v-for="column in columns" class="p-0">
+              <button
+                type="button"
+                class="btn btn-sm btn-ghost"
+                @click="sortKey = column; sortDirection = !sortDirection"
+              >
+                {{ column }}
+                {{ sortDirection ? '↑' : '↓' }}
+              </button>
+            </th>
+          </tr>
+        </thead>
+        <tbody class="text-lg">
+          <tr v-for="pacs in sortedPacs">
+            <td>{{ pacs['क्रमांक'] }}</td>
+            <td>{{ pacs['सदस्य का नाम'] }}</td>
+            <td>{{ pacs['पिता का नाम'] }}</td>
+            <td>{{ pacs['पता'] }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <script>
+      Vue.createApp({
+        data() {
+          return {
+            columns: ['क्रमांक', 'सदस्य का नाम', 'पिता का नाम', 'पता'],
+            pacs: [],
+            search: '',
+            sortKey: 'पता',
+            fontSize: 1,
+            sortDirection: false
+          }
+        },
+        created() {
+          Papa.parse('pacs2024.csv', {
+            download: true,
+            header: true,
+            complete: this.afterLoad
+          })
+          
+        },
+        mounted() {
+            let fontSize = parseFloat(localStorage.getItem('fontSize')) || 1 // 1 rem as default
+          // Apply the initial font size
+          document.documentElement.style.fontSize = `${fontSize}rem`
+        },
+        computed: {
+          places() {
+            return this.pacs.map(pac => pac['पता'])
+          },
+          searchedPacs() {
+            if (!this.search) {
+              console.log('No search')
+              return this.pacs
+            }
+            console.log('Searching')
+            return this.pacs.filter(pac => {
+              return pac['सदस्य का नाम'].includes(this.search)
+            })
+          },
+          sortedPacs() {
+            // return _.orderBy(this.searchedPacs, [this.sortKey], ['asc'])
+            //
+            return _.orderBy(
+              this.searchedPacs,
+              [this.sortKey],
+              [this.sortDirection ? 'asc' : 'desc']
+            )
+          }
+        },
+        methods: {
+          afterLoad: function (results) {
+            console.log('Parsing complete:', results)
+            // parse क्रमांक' to number
+            results.data.forEach(pac => {
+              pac['क्रमांक'] = parseInt(pac['क्रमांक'])
+            })
+            this.pacs.push(...results.data)
+          },
+          changeFontSize: function (action) {
+            if (action === 'increase' && this.fontSize < 2) {
+              // Max limit for font size
+              this.fontSize += 0.1
+            } else if (action === 'decrease' && this.fontSize > 0.8) {
+              // Min limit for font size
+              this.fontSize -= 0.1
+            }
+            document.documentElement.style.fontSize = `${this.fontSize}rem`
+            localStorage.setItem('fontSize', this.fontSize) // Save preference in local storage
+          }
+        }
+      }).mount('#app')
+    </script>
+  </body>
+</html>

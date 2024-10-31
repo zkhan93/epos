@@ -31,6 +31,8 @@ def error_response():
 @bp.route("/")
 @bp.route("/<file>")
 def index(file="index"):
+    if file.endswith(".csv"):
+        return bp.send_static_file(file)
     return bp.send_static_file(f"{file}.html")
 
 
