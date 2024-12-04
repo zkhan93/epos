@@ -116,7 +116,7 @@ def get_sales_details(fpsid=123300100909, month=3, year=2022, dist_code=233):
             except Exception as ex:
                 logging.exception(ex)
             else:
-                item["extra"] = {"name": name, "total":total, "seeded":seeded}
+                item["extra"] = {"name": name, "total":total, "seeded":seeded, "members": members}
     return items
 
 

@@ -79,6 +79,11 @@
       <input v-model="search_rc_number" class="form-control" type="text" inputmode="numeric"
         placeholder="Search by RC Number" />
     </div>
+    <div class="mb-3">
+      <label>Search</label>
+      <input v-model="search_name" class="form-control" type="text" inputmode="string"
+        placeholder="Search by Name" />
+    </div>
     <div v-if="loading" class="text-center">
       <span class="spinner-border" role="status"></span>
       <div>Loading...</div>
@@ -219,6 +224,7 @@
           fpsid: 123300100909,
           month: {},
           search_rc_number: "",
+          search_name: "",
           error: "",
           traceback: "",
           details_error: "",
@@ -284,12 +290,21 @@
           else return [];
         },
         filtered_items() {
-          if (this.search_rc_number)
+          if (this.search_rc_number){
             return this.items.filter(
               (item) =>
                 item[this.rc_key].startsWith(this.search_rc_number) ||
                 item[this.rc_key].endsWith(this.search_rc_number)
             );
+          }else if (this.search_name){
+            // filter all this.items where .extra.members[*].Member contains this.search_name in lowercase
+            return this.items.filter((item) => {
+              if (item.extra && item.extra.members){
+                return item.extra.members.some((mem) => mem.Member.toLowerCase().includes(this.search_name.toLowerCase()))
+              }
+              return false
+            })
+          }
           else return this.items;
         },
         months() {
