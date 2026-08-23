@@ -1,52 +1,37 @@
 import logging
 import os
+import threading
+
 from diskcache import Cache
-from celery import Celery
 
-logging.basicConfig(level=logging.INFO)
+# Despite the old name this was always 12 hours (60 * 24 * 30 seconds), and the
+# frontend depends on data going stale that quickly, so the value stays put.
+DEFAULT_CACHE_TTL = int(os.getenv("CACHE_TTL", str(60 * 24 * 30)))
+WEEK_IN_SECONDS = DEFAULT_CACHE_TTL  # kept for callers that still use it
 
-WEEK_IN_SECONDS = 60 * 24 * 30
+_cache = None
+_cache_lock = threading.Lock()
 
 
 def get_cache():
-    clear_cache = os.getenv("CLEAR_CACHE", "False") == "True"
-    cache = Cache(directory=os.getenv("CACHE_DIR", "/tmp/cache"))
-    if clear_cache:
-        logging.info("Clearing Cache...")
-        cache.clear()
-        logging.info("Cache cleared")
-    return cache
+    """One shared, thread safe disk cache for the whole process.
 
-
-def create_celery():
-    celery = Celery("celery app")
-    config_from_env = {
-        k.split("CELERY_", 1)[1].lower(): v
-        if v not in ("True", "False")
-        else v == "True"
-        for k, v in os.environ.items()
-        if k.startswith("CELERY_")
-    }
-    config = {
-        "broker_url": os.getenv("CELERY_BROKER_URL", "redis://redis:6379/0"),
-        "result_backend": os.getenv("CELERY_RESULT_BACKEND", "redis://redis:6379/1"),
-        "task_time_limit": int(os.getenv("TASK_TIME_LIMIT", "6")),
-        "task_ignore_result": False,
-        "task_acks_late": True,
-        "task_reject_on_worker_lost": True,
-    }
-    config.update(config_from_env)
-    celery.conf.update(config)
-    logging.info(f"Celery configured with {config}")
-
-    return celery
-
-
-def init_celery(celery, app):
-    class ContextTask(celery.Task):
-        def __call__(self, *args, **kwargs):
-            with app.app_context():
-                return self.run(*args, **kwargs)
-
-    celery.Task = ContextTask
-    return celery
+    diskcache keeps a per-thread sqlite connection internally, so a single
+    Cache object is both correct and much cheaper than opening a new one on
+    every task the way this used to.
+    """
+    global _cache
+    if _cache is None:
+        with _cache_lock:
+            if _cache is None:
+                _cache = Cache(
+                    directory=os.getenv("CACHE_DIR", "/tmp/cache"),
+                    # Bound the cache so it cannot fill a NAS volume.
+                    size_limit=int(os.getenv("CACHE_SIZE_LIMIT", str(128 * 1024**2))),
+                    statistics=0,
+                )
+                if os.getenv("CLEAR_CACHE", "False") == "True":
+                    logging.info("Clearing Cache...")
+                    _cache.clear()
+                    logging.info("Cache cleared")
+    return _cache

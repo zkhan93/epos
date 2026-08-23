@@ -1,12 +1,9 @@
-requests==2.27.1
-beautifulsoup4==4.11.1
-flask==2.1.1
-Werkzeug==2.2.2
-flask-cors==3.0.10
-gunicorn==20.1.0
-diskcache==5.4.0
-celery==5.2.7
-redis==4.3.3
-flower==1.0.0
-eventlet==0.33.1
-dnspython==2.2.1
+# Celery, Redis, eventlet, flower and dnspython are gone: crawls now run on a
+# thread pool inside the web process, so there is no broker and no second
+# container. See tasks.py.
+Flask==3.1.3
+flask-cors==6.0.5
+gunicorn==26.1.0
+requests==2.34.2
+beautifulsoup4==4.15.0
+diskcache==5.6.3

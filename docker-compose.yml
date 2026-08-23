@@ -1,63 +1,38 @@
-version: "3"
-
+# One service. The worker and redis containers are gone: crawls run on a thread
+# pool inside this process (see tasks.py).
 services:
   web:
     image: ghcr.io/zkhan93/epos:latest
     ports:
-      - 80
-    command:
-      [
-        "gunicorn",
-        "wsgi:app",
-        "--bind",
-        "0.0.0.0:80",
-        "--workers",
-        "2",
-        "--log-level=info",
-        "--access-logfile",
-        "-"
-      ]
+      - "${EPOS_PORT:-8088}:8080"
     environment:
       - CACHE_DIR=/cache
       - CLEAR_CACHE=False
-      - CELERY_BROKER_URL=redis://redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://redis:6379/1
+      # Threads serving HTTP, and threads running crawls. Both are waiting on
+      # the network almost all of the time, so small numbers go a long way.
+      - THREADS=8
+      - TASK_WORKERS=4
     volumes:
       - cache:/cache
+    # The app only ever writes to /cache, so everything else can be immutable.
+    read_only: true
+    tmpfs:
+      - /tmp
+    mem_limit: 128m
+    cpus: 1.0
+    # Keep container logs from quietly filling the NAS volume.
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
     labels:
       - traefik.enable=${TRAEFIK_ENABLE:-true}
       - traefik.http.routers.khancave-epos.rule=Host(`${EPOS_DOMAIN}`)
       - traefik.http.routers.khancave-epos.tls.certresolver=le
+      # Needed now that the app listens on 8080 as a non-root user.
+      - traefik.http.services.khancave-epos.loadbalancer.server.port=8080
     restart: unless-stopped
-
-  worker:
-    image: ghcr.io/zkhan93/epos:latest
-    command:
-      [
-        "celery",
-        "--app",
-        "app.celery",
-        "worker",
-        "--pool",
-        "eventlet",
-        "--autoscale",
-        "10,2",
-        "--loglevel=info",
-        "--concurrency=10"
-      ]
-    volumes:
-      - .:/usr/src/app
-      - cache:/cache
-    environment:
-      - CACHE_DIR=/cache
-      - CLEAR_CACHE=False
-      - CELERY_BROKER_URL=redis://redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://redis:6379/1
-    depends_on:
-      - redis
-
-  redis:
-    image: redis:7-alpine
 
 volumes:
   cache:

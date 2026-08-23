@@ -1,6 +1,6 @@
 import logging
 
-from ..core import do_request
+from ..core import do_request, session
 from .parsers import (
     EPDSRCDetailParser,
     RCDetailParser,
@@ -8,12 +8,11 @@ from .parsers import (
     StockDetailParser,
 )
 import utils
-import requests
 import re
 
-logging.basicConfig(level=logging.INFO)
+from tasks import task
 
-from celery import shared_task
+log = logging.getLogger(__name__)
 
 
 def _fetch_sale_details(fpsid, month, year, dist_code):
@@ -51,7 +50,7 @@ def _get_epds_hidden_fields(url):
     # fetching fresh values is not required as per testing but keeping it here for reference
     # valid for "https://epds.bihar.gov.in/SearchByRCID.aspx"
     try:
-        res = requests.get(url)
+        res = session.get(url, timeout=30)
     except Exception as ex:
         logging.exception(f"failed to get data from server {url}")
         raise Exception("Failed to get hidden fields from EPDS")
@@ -90,7 +89,7 @@ def _fetch_rc_details_epds(rc_number="10310060087015900096", dist_code="233"):
     ).text
 
 
-@shared_task(name="get_sales_details")
+@task(name="get_sales_details")
 def get_sales_details(fpsid=123300100909, month=3, year=2022, dist_code=233):
     table = _fetch_sale_details(
         fpsid=fpsid, month=month, year=year, dist_code=dist_code
@@ -120,7 +119,7 @@ def get_sales_details(fpsid=123300100909, month=3, year=2022, dist_code=233):
     return items
 
 
-@shared_task(name="get_rc_details_from_epds")
+@task(name="get_rc_details_from_epds")
 def get_rc_details_from_epds(
     rc_number=10310060087015900034, dist_code=233, use_cache=True
 ):
@@ -143,7 +142,7 @@ def get_rc_details_from_epds(
     return res
 
 
-@shared_task(name="get_rc_details")
+@task(name="get_rc_details")
 def get_rc_details(rc_number=10310060087015900034, month=3, year=2022, use_cache=True):
     cache = utils.get_cache()
     cache_key = f"rc_details:{rc_number}:{month}:{year}"
@@ -158,7 +157,7 @@ def get_rc_details(rc_number=10310060087015900034, month=3, year=2022, use_cache
     return {"members": members, "transactions": transactions}
 
 
-@shared_task(name="get_stock_details")
+@task(name="get_stock_details")
 def get_stock_details(fpsid=123300100909, month=3, year=2022, dist_code=233):
     content = _fetch_stock_details(
         fpsid=fpsid, month=month, year=year, dist_code=dist_code
