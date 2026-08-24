@@ -29,7 +29,7 @@ Measured on the same machine, idle, anonymous memory via `memory.stat`:
 | | containers | memory | image |
 |---|---|---|---|
 | web + worker + redis | 3 | 139 MiB | 1.17 GB |
-| this | 1 | 44 MiB | 72 MB |
+| this | 1 | 44 MiB | 61 MB |
 
 Because task state lives in process memory, the app runs **one** gunicorn
 worker with several threads. Do not raise `workers` — a task queued by one

@@ -10,8 +10,17 @@ ENV PIP_DISABLE_PIP_VERSION_CHECK=1 \
 RUN apk add --no-cache build-base libffi-dev
 
 COPY requirements.txt /requirements.txt
+
+# pip is ~12MB of the venv, more than every actual dependency combined, and
+# nothing installs packages at runtime. It has to go here rather than in the
+# final stage: removing a file in a later layer only adds a whiteout, it does
+# not shrink the image. pip's own bytecode lives inside its directory and goes
+# with it; the other packages keep theirs.
 RUN python -m venv /venv \
-    && /venv/bin/pip install -r /requirements.txt
+    && /venv/bin/pip install -r /requirements.txt \
+    && rm -rf /venv/lib/python*/site-packages/pip \
+              /venv/lib/python*/site-packages/pip-*.dist-info \
+              /venv/bin/pip /venv/bin/pip3 /venv/bin/pip3.*
 
 
 FROM python:3.13-alpine
