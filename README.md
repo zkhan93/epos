@@ -32,9 +32,16 @@ Measured on the same machine, idle, anonymous memory via `memory.stat`:
 | this | 1 | 44 MiB | 61 MB |
 
 Because task state lives in process memory, the app runs **one** gunicorn
-worker with several threads. Do not raise `workers` — a task queued by one
-process is invisible to another, and the browser would poll forever. Scale with
-`THREADS` instead.
+worker with several threads. A `--workers` above 1 is clamped back to 1 with a
+warning rather than obeyed: a task queued by one process is invisible to
+another, so polls would land on a worker that has never heard of the task and
+the spinner would never stop. Scale with `THREADS` instead.
+
+A deployment that still pins the old command
+(`gunicorn wsgi:app --bind 0.0.0.0:80 --workers 2 ...`) keeps working — the
+worker count is clamped and the healthcheck accepts port 80 — but drop the
+`command:` block anyway and let the image's own `CMD` run, so you get the tuned
+config instead of gunicorn defaults.
 
 ## Running it
 

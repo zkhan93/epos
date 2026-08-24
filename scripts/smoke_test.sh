@@ -92,6 +92,55 @@ if [ "$uid" != "0" ]; then pass "runs as non-root (uid $uid)"; else fail "runnin
 procs="$(docker exec "$NAME" sh -c 'ps -o args= | grep -c "[g]unicorn"' || true)"
 pass "gunicorn processes in the container: $procs (1 master + 1 worker)"
 
+echo "==> the legacy command line is neutralised, not obeyed"
+# Deployments still pin the old `--workers 2 --bind 0.0.0.0:80` command. Two
+# workers would split the in-process task registry and strand polls at PENDING
+# forever, so gunicorn.conf.py clamps it. Guard that here.
+LEG="epos-legacy-$$"
+docker rm -f "$LEG" >/dev/null 2>&1 || true
+docker run -d --name "$LEG" -p "127.0.0.1:$((PORT + 1)):80" \
+  -e HTTP_CONNECT_TIMEOUT=2 -e HTTP_READ_TIMEOUT=2 "$IMAGE" \
+  gunicorn wsgi:app --bind 0.0.0.0:80 --workers 2 --log-level=info --access-logfile '-' >/dev/null
+sleep 6
+if docker logs "$LEG" 2>&1 | grep -q "ignoring --workers 2"; then
+  pass "--workers 2 is refused with a warning"
+else
+  fail "--workers 2 was not clamped"
+fi
+nworkers="$(docker exec "$LEG" sh -c 'ps -o args= | grep -c "[g]unicorn"' || echo 0)"
+if [ "$nworkers" = "2" ]; then
+  pass "only master + 1 worker running despite --workers 2"
+else
+  fail "expected 2 gunicorn processes, found $nworkers"
+fi
+legbase="http://127.0.0.1:$((PORT + 1))"
+ltid="$(curl -fsS "$legbase/get-rc-details?rcnumber=777&month=3&year=2022" | sed 's/.*"task_id":"\([^"]*\)".*/\1/')"
+lfinal=""
+for _ in $(seq 1 30); do
+  case "$(curl -fsS "$legbase/tasks/$ltid")" in
+    *'"status":"SUCCESS"'*) lfinal=SUCCESS; break ;;
+    *'"status":"FAILURE"'*) lfinal=FAILURE; break ;;
+  esac
+  sleep 1
+done
+if [ -n "$lfinal" ]; then
+  spread="$(seq 1 40 | xargs -P 10 -I{} curl -fsS "$legbase/tasks/$ltid" \
+    | sed 's/.*"status":"\([^"]*\)".*/\1/' | sort -u | tr '\n' ',' )"
+  if [ "$spread" = "${lfinal}," ]; then
+    pass "40 concurrent polls of a finished task all agree ($lfinal)"
+  else
+    fail "polls disagree across workers: $spread"
+  fi
+else
+  fail "task never finished under the legacy command"
+fi
+if [ "$(docker inspect -f '{{.State.Health.Status}}' "$LEG")" != "unhealthy" ]; then
+  pass "healthcheck copes with the legacy bind on port 80"
+else
+  fail "healthcheck went unhealthy on the legacy bind"
+fi
+docker rm -f "$LEG" >/dev/null 2>&1 || true
+
 echo "==> footprint"
 docker stats --no-stream --format '  {{.Name}}  mem={{.MemUsage}}  cpu={{.CPUPerc}}' "$NAME"
 echo "  image: $(docker images "$IMAGE" --format '{{.Size}}' | head -1)"

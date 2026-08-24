@@ -22,6 +22,11 @@ preload_app = True
 # Sidestep the tmpfs-less container case for the heartbeat file.
 worker_tmp_dir = "/dev/shm" if os.path.isdir("/dev/shm") else None
 
+# gunicorn 26 opens a control socket under $HOME by default. This image has no
+# writable home (and a read-only root filesystem), so that only produces an
+# error on every boot. Nothing here uses the control interface.
+control_socket_disable = True
+
 # Long enough for a slow scrape to finish; the real bound on task runtime is the
 # per-request HTTP timeout in crawler/core.py.
 timeout = int(os.getenv("TIMEOUT", "120"))
@@ -50,9 +55,25 @@ def post_fork(server, worker):
 
 
 def on_starting(server):
+    # A command line --workers overrides the value set above, and more than one
+    # worker silently breaks the UI: task state lives in process memory, so a
+    # poll that lands on the other worker reports PENDING for a task that has
+    # already finished and the spinner never stops. Clamp it rather than let
+    # that reach anyone, and say so loudly enough to get the flag removed.
+    if server.cfg.workers != 1:
+        server.log.warning(
+            "ignoring --workers %s and running 1 worker: task state is "
+            "in-process, so extra workers strand polls at PENDING. Remove the "
+            "flag and raise THREADS instead.",
+            server.cfg.workers,
+        )
+        server.cfg.set("workers", 1)
+        # Arbiter.setup() has already copied cfg.workers into num_workers by the
+        # time this hook runs, so the live value has to be corrected too.
+        server.num_workers = 1
     server.log.info(
         "epos starting: 1 worker, %s threads, %s cores visible",
-        threads,
+        server.cfg.threads,
         multiprocessing.cpu_count(),
     )
 

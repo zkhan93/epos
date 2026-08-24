@@ -50,8 +50,12 @@ USER epos
 EXPOSE 8080
 
 # busybox wget is already in the base image, so this costs far less than
-# starting a second Python interpreter every minute.
+# starting a second Python interpreter every minute. Port 80 is tried as a
+# fallback so a deployment still overriding the command with the old
+# `--bind 0.0.0.0:80` reports healthy instead of flapping.
 HEALTHCHECK --interval=60s --timeout=5s --start-period=10s --retries=3 \
-    CMD wget -qO- "http://127.0.0.1:${PORT}/healthz" >/dev/null || exit 1
+    CMD wget -qO- "http://127.0.0.1:${PORT}/healthz" >/dev/null 2>&1 \
+     || wget -qO- "http://127.0.0.1:80/healthz" >/dev/null 2>&1 \
+     || exit 1
 
 CMD ["gunicorn", "-c", "gunicorn.conf.py", "wsgi:app"]
